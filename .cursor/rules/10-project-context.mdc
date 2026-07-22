@@ -1,0 +1,89 @@
+---
+description: Product context for mararx.com
+alwaysApply: true
+---
+
+# Project
+
+mararx.com is Denis's personal photo journal and travel diary.
+
+The website is primarily for publishing:
+- photography;
+- short observations;
+- longer travel stories;
+- locations and routes from trips, mainly around Georgia.
+
+This is not:
+- a commercial photographer portfolio;
+- a SaaS product;
+- a social network;
+- a complex publishing platform.
+
+# Main sections
+
+## Journal
+
+Journal is the home page.
+
+It should include:
+- a chronological feed of recent photos;
+- a year filter at the top;
+- large year labels with one active year;
+- trip or story name associated with each photo;
+- large photo preview on click;
+- optional caption;
+- optional link to the related Story.
+
+## Stories
+
+Stories contains cards for individual trips or photo stories.
+
+A Story page may include:
+- photos;
+- optional text blocks;
+- title and date;
+- location;
+- coordinates;
+- embedded map or route.
+
+Use the name "Stories", not "Journeys".
+
+## About
+
+About explains:
+- who the author is;
+- the idea behind the project;
+- the approach to travel and photography.
+
+# Design direction
+
+The site should feel:
+- visual;
+- atmospheric;
+- restrained;
+- editorial;
+- contemporary;
+- personal.
+
+Photography must remain the dominant visual element.
+
+Avoid:
+- dashboard layouts;
+- excessive cards;
+- generic SaaS styling;
+- excessive rounded containers;
+- heavy animation;
+- decorative UI that competes with photos;
+- unnecessary text;
+- template-like portfolio design.
+
+# Development approach
+
+- Build directly in code.
+- Do not create a separate prototype first.
+- Keep the architecture simple.
+- Use reusable components only where they reduce duplication.
+- Do not add a CMS, authentication, admin panel, or cloud storage integration unless requested.
+- Use placeholder content when real content is unavailable.
+- Iterate section by section from browser screenshots.
+- Prefer the simplest implementation that supports Journal, Stories, About, and mobile usability.

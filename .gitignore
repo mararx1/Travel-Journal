@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Editor caches
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Temporary screenshots / debug artifacts
+*.tmp.png
+*.tmp.jpg
+debug-*.png
+debug-*.jpg
+
+# Raw camera originals kept for local reference only.
+# These are byte-identical sources for the renamed, deployed
+# copies already tracked under public/images/. See README.md
+# and docs/DEVELOPER_HANDOFF.md for details.
+references/photos/

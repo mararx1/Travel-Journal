@@ -1,0 +1,14 @@
+---
+description: Concise and efficient work
+alwaysApply: true
+---
+
+- Respond briefly and directly.
+- Do not repeat my request.
+- Do not write a plan for simple tasks.
+- Make the smallest viable change.
+- Inspect only files relevant to the task.
+- Do not refactor unrelated code.
+- Do not install dependencies unless necessary.
+- Ask a question only if the task is genuinely blocked.
+- After changes, report only what changed and whether it was checked.
