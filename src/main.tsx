@@ -2,6 +2,7 @@ import {
   StrictMode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -41,7 +42,7 @@ function SiteImage({
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [ratio, setRatio] = useState<number | null>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setStatus('loading')
     setRatio(null)
     const image = imageRef.current
@@ -66,6 +67,7 @@ function SiteImage({
         loading={priority || eager ? 'eager' : 'lazy'}
         fetchPriority={priority ? 'high' : undefined}
         decoding="async"
+        style={mode === 'contain' && ratio ? { aspectRatio: ratio } : undefined}
         onLoad={(event) => {
           setRatio(event.currentTarget.naturalWidth / event.currentTarget.naturalHeight)
           setStatus('loaded')

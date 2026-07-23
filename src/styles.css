@@ -721,7 +721,9 @@ nav .is-active {
   flex: 0 0 auto;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
+  min-height: 84px;
   max-width: min(100%, 900px);
 }
 
@@ -995,6 +997,7 @@ nav .is-active {
   .lightbox-footer {
     max-width: 100%;
     padding: 0 8px;
+    min-height: 76px;
   }
 
   .lightbox-metadata {
