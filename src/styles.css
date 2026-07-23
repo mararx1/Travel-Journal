@@ -119,15 +119,20 @@ nav .is-active {
   border-bottom: 1px solid currentColor;
 }
 
-.language-switcher {
-  display: inline-flex;
-  gap: 6px;
-  margin-left: 8px;
+.logo:hover,
+nav a:hover {
+  opacity: 0.7;
 }
 
-.language-switcher a + a::before {
-  margin-right: 6px;
-  content: '/';
+.logo:focus-visible,
+nav a:focus-visible {
+  outline: 2px solid #161616;
+  outline-offset: 4px;
+}
+
+.language-switcher {
+  display: inline-block;
+  margin-left: 8px;
 }
 
 .journal h1 {
@@ -835,6 +840,8 @@ nav .is-active {
 
   .header {
     align-items: flex-start;
+    flex-wrap: wrap;
+    row-gap: 10px;
     gap: 12px;
     padding-bottom: 48px;
   }
