@@ -350,6 +350,8 @@ function PhotoViewer({
 }
 
 function Header({ route, navigate }: { route: Route; navigate: (route: Route) => void }) {
+  const otherLocale: Locale = route.locale === 'ru' ? 'en' : 'ru'
+
   function handleNavigation(event: MouseEvent<HTMLAnchorElement>, route: Route) {
     event.preventDefault()
     navigate(route)
@@ -370,23 +372,22 @@ function Header({ route, navigate }: { route: Route; navigate: (route: Route) =>
         <a className={route.page === 'about' ? 'is-active' : undefined} href={getPath({ locale: route.locale, page: 'about' })} aria-current={route.page === 'about' ? 'page' : undefined} onClick={(event) => handleNavigation(event, { locale: route.locale, page: 'about' })}>
           {translate(route.locale, 'about')}
         </a>
-        <span className="language-switcher" aria-label={translate(route.locale, 'language')}>
-          {(['en', 'ru'] as const).map((locale) => (
-            <a
-              className={route.locale === locale ? 'is-active' : undefined}
-              href={getPath({ ...route, locale })}
-              aria-current={route.locale === locale ? 'true' : undefined}
-              onClick={(event) => {
-                event.preventDefault()
-                window.localStorage.setItem('mararx.locale', locale)
-                navigate({ ...route, locale })
-              }}
-              key={locale}
-            >
-              {locale.toUpperCase()}
-            </a>
-          ))}
-        </span>
+        <a
+          className="language-switcher"
+          href={`${getPath({ ...route, locale: otherLocale })}${window.location.search}${window.location.hash}`}
+          aria-label={translate(route.locale, otherLocale === 'ru' ? 'switchToRussian' : 'switchToEnglish')}
+          onClick={(event) => {
+            event.preventDefault()
+            const { search, hash } = window.location
+            window.localStorage.setItem('mararx.locale', otherLocale)
+            navigate({ ...route, locale: otherLocale })
+            if (search || hash) {
+              window.history.replaceState({}, '', `${getPath({ ...route, locale: otherLocale })}${search}${hash}`)
+            }
+          }}
+        >
+          {otherLocale.toUpperCase()}
+        </a>
       </nav>
     </header>
   )

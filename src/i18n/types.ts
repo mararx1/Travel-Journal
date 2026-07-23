@@ -37,3 +37,5 @@ export type TranslationKey =
   | 'language'
   | 'storyNavigation'
   | 'storiesIntro'
+  | 'switchToRussian'
+  | 'switchToEnglish'

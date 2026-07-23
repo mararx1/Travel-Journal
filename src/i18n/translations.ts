@@ -31,6 +31,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     language: 'Language',
     storyNavigation: 'Story navigation',
     storiesIntro: 'Trips, places, and photographs collected into longer visual narratives.',
+    switchToRussian: 'Switch to Russian',
+    switchToEnglish: 'Switch to English',
   },
   ru: {
     journal: 'Журнал',
@@ -62,6 +64,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     language: 'Язык',
     storyNavigation: 'Навигация по историям',
     storiesIntro: 'Поездки, места и фотографии, собранные в длинные визуальные истории.',
+    switchToRussian: 'Переключить на русский',
+    switchToEnglish: 'Переключить на английский',
   },
 }
 
