@@ -13,7 +13,7 @@ import {
 import { createRoot } from 'react-dom/client'
 import { journalRows, journalYears, type JournalPhoto } from './data/journal'
 import { storyPreviews, type StoryPreview } from './data/stories'
-import { chiaturaCavesContent, type StoryContentBlock, type StoryImage } from './data/story-details'
+import { storyContentBySlug, type StoryContentBlock, type StoryImage } from './data/story-details'
 import { SiteImage } from './components/SiteImage'
 import { formatDate, formatPhotoCount, getPath, getRoute, localize, type LocalizedRoute } from './i18n/locale'
 import { translate } from './i18n/translations'
@@ -541,14 +541,15 @@ function StoryContent({
 
 function StoryPage({ navigate, route }: { navigate: (route: Route) => void; route: Route }) {
   const story = storyPreviews.find(({ route: storyRoute }) => storyRoute?.split('/').pop() === route.slug)
+  const content = route.slug ? storyContentBySlug[route.slug] : undefined
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null)
   const storyPhotos = useMemo(
-    () => (story ? flattenStoryPhotos(chiaturaCavesContent, story, route.locale) : []),
-    [route.locale, story],
+    () => (story && content ? flattenStoryPhotos(content, story, route.locale) : []),
+    [content, route.locale, story],
   )
 
-  if (!story) {
+  if (!story || !content) {
     return null
   }
 
@@ -580,7 +581,7 @@ function StoryPage({ navigate, route }: { navigate: (route: Route) => void; rout
           <p>{localize(story.intro ?? story.description, route.locale)}</p>
         </header>
 
-        <StoryContent blocks={chiaturaCavesContent} photos={storyPhotos} onOpenPhoto={openViewerAt} locale={route.locale} />
+        <StoryContent blocks={content} photos={storyPhotos} onOpenPhoto={openViewerAt} locale={route.locale} />
 
         <nav className="story-pagination" aria-label={translate(route.locale, 'storyNavigation')}>
           <a href={getPath({ locale: route.locale, page: 'stories' })} onClick={(event) => { event.preventDefault(); navigate({ locale: route.locale, page: 'stories' }) }}>{translate(route.locale, 'previousStory')}</a>

@@ -1,4 +1,5 @@
 import type { LocalizedText } from '../i18n/types'
+import { appliedStoryContentBySlug } from './applied-stories'
 
 type StoryImageSource = {
   src: string
@@ -150,3 +151,9 @@ export const chiaturaCavesContent: StoryContentBlock[] = chiaturaCavesContentSou
   if (block.type === 'image-row') return { ...block, images: [image(block.images[0]), image(block.images[1])] }
   return { ...block, image: image(block.image) }
 })
+
+/** Slug → content blocks for StoryPage (hand-authored + Studio-applied). */
+export const storyContentBySlug: Record<string, StoryContentBlock[]> = {
+  'chiatura-caves': chiaturaCavesContent,
+  ...appliedStoryContentBySlug,
+}

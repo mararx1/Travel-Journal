@@ -1,4 +1,5 @@
 import type { LocalizedText } from '../i18n/types'
+import { appliedStoryPreviews } from './applied-stories'
 
 type StoryPreviewSource = {
   id: string
@@ -12,7 +13,7 @@ type StoryPreviewSource = {
   description: string
   intro?: string
   photoCount?: number
-  route?: '/stories/chiatura-caves'
+  route?: string
 }
 
 export type StoryPreview = Omit<StoryPreviewSource, 'coverAlt' | 'detailAlt' | 'title' | 'location' | 'description' | 'intro'> & {
@@ -169,7 +170,7 @@ function text(en: string): LocalizedText {
   return { en, ru: russianText[en] }
 }
 
-export const storyPreviews: StoryPreview[] = storyPreviewsSource.map((story) => ({
+const authoredStoryPreviews: StoryPreview[] = storyPreviewsSource.map((story) => ({
   ...story,
   coverAlt: text(story.coverAlt),
   detailAlt: story.detailAlt ? text(story.detailAlt) : undefined,
@@ -178,3 +179,11 @@ export const storyPreviews: StoryPreview[] = storyPreviewsSource.map((story) => 
   description: text(story.description),
   intro: story.intro ? text(story.intro) : undefined,
 }))
+
+const appliedIds = new Set(appliedStoryPreviews.map((story) => story.id))
+
+/** Hand-authored previews plus Studio-applied stories (applied wins on matching id). */
+export const storyPreviews: StoryPreview[] = [
+  ...authoredStoryPreviews.filter((story) => !appliedIds.has(story.id)),
+  ...appliedStoryPreviews,
+]
