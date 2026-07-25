@@ -6,8 +6,9 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { createBlock } from './blockFactory'
 import { initialDraft } from './mockDraft'
-import type { StudioBlock, StudioDraft } from './types'
+import type { AddBlockKind, StudioBlock, StudioDraft } from './types'
 
 type StudioDraftContextValue = {
   draft: StudioDraft
@@ -16,6 +17,8 @@ type StudioDraftContextValue = {
   selectBlock: (id: string | null) => void
   updateBlock: (id: string, updater: (block: StudioBlock) => StudioBlock) => void
   reorderBlocks: (fromIndex: number, insertBeforeIndex: number) => void
+  addBlock: (kind: AddBlockKind, insertBeforeIndex: number) => void
+  deleteBlock: (id: string) => void
 }
 
 const StudioDraftContext = createContext<StudioDraftContextValue | null>(null)
@@ -46,7 +49,6 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
         return current
       }
 
-      // Same position — no change (including insert immediately after self).
       if (insertBeforeIndex === fromIndex || insertBeforeIndex === fromIndex + 1) {
         return current
       }
@@ -59,14 +61,51 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const addBlock = useCallback((kind: AddBlockKind, insertBeforeIndex: number) => {
+    const block = createBlock(kind)
+    setDraft((current) => {
+      const blocks = [...current.blocks]
+      const index = Math.max(0, Math.min(insertBeforeIndex, blocks.length))
+      blocks.splice(index, 0, block)
+      return { ...current, blocks }
+    })
+    setSelectedBlockId(block.id)
+  }, [])
+
+  const deleteBlock = useCallback((id: string) => {
+    setDraft((current) => ({
+      ...current,
+      blocks: current.blocks.filter((block) => block.id !== id),
+    }))
+    setSelectedBlockId((current) => (current === id ? null : current))
+  }, [])
+
   const selectedBlock = useMemo(
     () => draft.blocks.find((block) => block.id === selectedBlockId) ?? null,
     [draft.blocks, selectedBlockId],
   )
 
   const value = useMemo(
-    () => ({ draft, selectedBlockId, selectedBlock, selectBlock, updateBlock, reorderBlocks }),
-    [draft, selectedBlockId, selectedBlock, selectBlock, updateBlock, reorderBlocks],
+    () => ({
+      draft,
+      selectedBlockId,
+      selectedBlock,
+      selectBlock,
+      updateBlock,
+      reorderBlocks,
+      addBlock,
+      deleteBlock,
+    }),
+    [
+      draft,
+      selectedBlockId,
+      selectedBlock,
+      selectBlock,
+      updateBlock,
+      reorderBlocks,
+      addBlock,
+      deleteBlock,
+    ],
   )
 
   return <StudioDraftContext.Provider value={value}>{children}</StudioDraftContext.Provider>

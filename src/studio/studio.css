@@ -137,6 +137,8 @@
 }
 
 .studio-panel-right {
+  display: flex;
+  flex-direction: column;
   border-right: 0;
   border-left: 1px solid var(--studio-border);
 }
@@ -277,22 +279,113 @@
   pointer-events: none;
 }
 
+.studio-add-control {
+  position: relative;
+  margin: 0 0 8px;
+}
+
 .studio-add-block {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 36px;
-  margin: 0 0 18px;
+  height: 28px;
   border: 1px dashed var(--studio-border);
   border-radius: 6px;
   background: transparent;
   color: var(--studio-muted);
-  cursor: default;
+  cursor: pointer;
 }
 
-.studio-add-block:disabled {
-  opacity: 0.7;
+.studio-add-control.is-open .studio-add-block,
+.studio-add-block:hover {
+  border-color: #a1a1aa;
+  color: var(--studio-text);
+}
+
+.studio-add-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  z-index: 5;
+  min-width: 180px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--studio-border);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+  transform: translateX(-50%);
+}
+
+.studio-add-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--studio-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.studio-add-menu button:hover {
+  background: #f4f4f5;
+}
+
+.studio-photo-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 140px;
+  aspect-ratio: 3 / 2;
+  border: 1px dashed #c4c4c8;
+  background: #f4f4f5;
+  color: var(--studio-muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.story-photo--portrait .studio-photo-placeholder {
+  aspect-ratio: 3 / 4;
+  min-height: 220px;
+}
+
+.studio-triple-row {
+  gap: 10px;
+}
+
+.studio-triple-row .featured-photo {
+  position: relative;
+  min-width: 0;
+}
+
+.studio-triple-row .studio-photo-placeholder,
+.studio-triple-row .image-frame {
+  width: 100%;
+}
+
+.studio-panel-footer {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--studio-border);
+}
+
+.studio-delete {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.studio-delete:hover {
+  background: #fef2f2;
 }
 
 .studio-block-slot {

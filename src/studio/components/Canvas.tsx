@@ -10,6 +10,8 @@ import {
 import { SiteImage } from '../../components/SiteImage'
 import { useStudioDraft } from '../StudioDraftContext'
 import type { StudioBlock } from '../types'
+import { AddBlockControl } from './AddBlockControl'
+import { StudioPhoto } from './StudioPhoto'
 
 function BlockShell({
   block,
@@ -110,10 +112,6 @@ export function Canvas() {
   }
 
   function handleDragEnd() {
-    if (!didDropRef.current) {
-      clearDrag()
-      return
-    }
     clearDrag()
   }
 
@@ -153,7 +151,7 @@ export function Canvas() {
     if (block.type === 'text') {
       return (
         <BlockShell key={block.id} {...shellProps}>
-          <p className="story-text">{block.content.en}</p>
+          <p className="story-text">{block.content.en || 'Empty text block'}</p>
         </BlockShell>
       )
     }
@@ -161,7 +159,7 @@ export function Canvas() {
     if (block.type === 'caption') {
       return (
         <BlockShell key={block.id} {...shellProps}>
-          <p className="story-caption">{block.content.en}</p>
+          <p className="story-caption">{block.content.en || 'Empty caption'}</p>
         </BlockShell>
       )
     }
@@ -170,8 +168,8 @@ export function Canvas() {
       return (
         <BlockShell key={block.id} {...shellProps}>
           <aside className="story-location">
-            <p>{block.label.en}</p>
-            {block.coordinates && <p>{block.coordinates.en}</p>}
+            <p>{block.label.en || 'Location'}</p>
+            {block.coordinates?.en && <p>{block.coordinates.en}</p>}
           </aside>
         </BlockShell>
       )
@@ -181,14 +179,10 @@ export function Canvas() {
       return (
         <BlockShell key={block.id} {...shellProps}>
           <div className={`story-photo-pair story-photo-pair--${block.layout ?? 'equal'}`}>
-            {block.images.map((image) => (
-              <figure key={image.src}>
+            {block.images.map((image, index) => (
+              <figure key={`${block.id}-${index}`}>
                 <div className="story-photo-trigger">
-                  <SiteImage
-                    src={image.src}
-                    alt={image.alt?.en ?? ''}
-                    orientation={image.orientation}
-                  />
+                  <StudioPhoto image={image} />
                 </div>
                 {block.showCaption && image.caption?.en && (
                   <figcaption className="story-caption">{image.caption.en}</figcaption>
@@ -200,16 +194,28 @@ export function Canvas() {
       )
     }
 
+    if (block.type === 'image-triple') {
+      return (
+        <BlockShell key={block.id} {...shellProps}>
+          <div className={`jrow jrow--${block.layout} studio-triple-row`}>
+            {block.images.map((image, index) => (
+              <div className="featured-photo" key={`${block.id}-${index}`}>
+                <StudioPhoto image={image} />
+                {block.showCaption && image.caption?.en && (
+                  <span className="photo-label">{image.caption.en}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </BlockShell>
+      )
+    }
+
     return (
       <BlockShell key={block.id} {...shellProps}>
         <figure className={`story-photo story-photo--${block.size}`}>
           <div className="story-photo-trigger">
-            <SiteImage
-              src={block.image.src}
-              alt={block.image.alt?.en ?? ''}
-              orientation={block.image.orientation}
-              eager={block.id === draft.blocks[0]?.id}
-            />
+            <StudioPhoto image={block.image} eager={block.id === draft.blocks[0]?.id} />
           </div>
           {block.showCaption && block.image.caption?.en && (
             <figcaption className="story-caption">{block.image.caption.en}</figcaption>
@@ -226,7 +232,6 @@ export function Canvas() {
         onClick={() => selectBlock(null)}
         onDragOver={(event) => {
           if (!dragId) return
-          // Allow cancelling by leaving slots; keep dropEffect none outside slots.
           if (!(event.target as HTMLElement).closest('.studio-drop-slot')) {
             event.dataTransfer.dropEffect = 'none'
           }
@@ -235,10 +240,6 @@ export function Canvas() {
         <p className="studio-canvas-kicker">{draft.kicker}</p>
         <h1 className="studio-canvas-title">{draft.title}</h1>
         <p className="studio-canvas-intro">{draft.intro}</p>
-
-        <button type="button" className="studio-add-block" disabled>
-          + Add block
-        </button>
 
         <div className={`story-narrative${dragId ? ' is-reordering' : ''}`}>
           {draft.blocks.map((block, index) => (
@@ -250,6 +251,7 @@ export function Canvas() {
               >
                 <DropIndicator active={dragId !== null && insertBefore === index} />
               </div>
+              <AddBlockControl insertBeforeIndex={index} />
               {renderBlock(block)}
             </div>
           ))}
@@ -260,6 +262,7 @@ export function Canvas() {
           >
             <DropIndicator active={dragId !== null && insertBefore === draft.blocks.length} />
           </div>
+          <AddBlockControl insertBeforeIndex={draft.blocks.length} />
         </div>
 
         <div className="jrow jrow--thirds studio-jrow-demo" aria-hidden="true">

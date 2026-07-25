@@ -5,22 +5,34 @@ export type StudioImage = {
   alt?: LocalizedText
   caption?: LocalizedText
   orientation?: 'portrait' | 'landscape' | 'wide'
+  placeholder?: boolean
 }
+
+export type ImageRowLayout = 'equal' | 'wide-narrow' | 'narrow-wide' | 'portrait-pair'
+export type ImageSize = 'full' | 'medium' | 'portrait'
+export type ImageTripleLayout = 'thirds' | 'thirds-portrait'
 
 export type StudioBlock =
   | { id: string; type: 'text'; content: LocalizedText }
   | {
       id: string
       type: 'image'
-      size: 'full' | 'medium' | 'portrait'
+      size: ImageSize
       image: StudioImage
       showCaption: boolean
     }
   | {
       id: string
       type: 'image-row'
-      layout?: 'equal' | 'wide-narrow' | 'narrow-wide' | 'portrait-pair'
+      layout?: ImageRowLayout
       images: [StudioImage, StudioImage]
+      showCaption: boolean
+    }
+  | {
+      id: string
+      type: 'image-triple'
+      layout: ImageTripleLayout
+      images: [StudioImage, StudioImage, StudioImage]
       showCaption: boolean
     }
   | { id: string; type: 'caption'; content: LocalizedText }
@@ -32,3 +44,12 @@ export type StudioDraft = {
   intro: string
   blocks: StudioBlock[]
 }
+
+export type AddBlockKind =
+  | 'text'
+  | 'image'
+  | 'image-row'
+  | 'image-row-asymmetric'
+  | 'image-triple'
+  | 'caption'
+  | 'location'
