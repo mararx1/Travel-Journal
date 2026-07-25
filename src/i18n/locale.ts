@@ -1,6 +1,6 @@
 import type { Locale, LocalizedText } from './types'
 
-export type Page = 'journal' | 'stories' | 'story' | 'about'
+export type Page = 'journal' | 'stories' | 'story' | 'about' | 'studio'
 
 export type LocalizedRoute = {
   locale: Locale
@@ -13,7 +13,10 @@ export function localize(value: LocalizedText, locale: Locale) {
 }
 
 export function getRoute(pathname: string): LocalizedRoute {
-  const segments = pathname.replace(/\/+$/, '').split('/').filter(Boolean)
+  const normalized = pathname.replace(/\/+$/, '') || '/'
+  if (normalized === '/studio') return { locale: 'en', page: 'studio' }
+
+  const segments = normalized.split('/').filter(Boolean)
   const locale: Locale = segments[0] === 'ru' ? 'ru' : 'en'
   const path = locale === 'ru' ? segments.slice(1) : segments
 
@@ -24,6 +27,8 @@ export function getRoute(pathname: string): LocalizedRoute {
 }
 
 export function getPath({ locale, page, slug }: LocalizedRoute) {
+  if (page === 'studio') return '/studio'
+
   const prefix = locale === 'ru' ? '/ru' : ''
   if (page === 'stories') return `${prefix}/stories`
   if (page === 'story' && slug) return `${prefix}/stories/${slug}`
