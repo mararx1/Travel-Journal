@@ -468,70 +468,139 @@
 
 .studio-drop-slot {
   position: relative;
-  height: 12px;
-  margin: 0 0 -6px;
+  height: 10px;
+  margin: 0 0 -4px;
   z-index: 2;
 }
 
 .studio-drop-slot--end {
-  height: 20px;
+  height: 18px;
   margin: 0;
 }
 
-.studio-drop-indicator {
+.studio-drop-line {
   position: absolute;
-  left: 8px;
-  right: 8px;
-  top: 50%;
-  height: 2px;
-  border-radius: 1px;
   background: transparent;
-  transform: translateY(-50%);
   pointer-events: none;
 }
 
-.studio-drop-indicator.is-active {
-  background: #111;
-  box-shadow: 0 0 0 1px #111;
+.studio-drop-line--horizontal {
+  left: 10px;
+  right: 10px;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.studio-drop-line--vertical {
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 1px;
+}
+
+.studio-drop-line.is-active {
+  background: #18181b;
+}
+
+.studio-drop-line-wrap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.studio-drop-line-wrap--start {
+  left: 0;
+}
+
+.studio-drop-line-wrap--end {
+  right: 0;
 }
 
 .studio-block {
   position: relative;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  gap: 4px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 2px;
   margin: 0 0 12px;
-  padding: 4px;
+  padding: 4px 4px 4px 0;
   border: 1px solid transparent;
   border-radius: 2px;
   outline: none;
   cursor: default;
+  transition: opacity 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
 
 .studio-block.is-selected {
-  border-color: #111;
+  border-color: #d4d4d8;
 }
 
 .studio-block.is-dragging {
+  opacity: 0.35;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+}
+
+.studio-canvas.is-dragging-canvas .studio-block:not(.is-dragging) .studio-block-body,
+.studio-canvas.is-dragging-canvas .studio-add-control {
   opacity: 0.45;
 }
 
-.studio-drag-handle {
+.studio-grip {
+  display: grid;
+  gap: 3px;
+  width: 8px;
+}
+
+.studio-grip span {
+  display: block;
+  width: 8px;
+  height: 1px;
+  background: currentColor;
+}
+
+.studio-drag-handle,
+.studio-image-drag-handle {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  width: 28px;
-  padding: 10px 0 0;
   border: 0;
   background: transparent;
   color: var(--studio-muted);
-  font-size: 14px;
-  line-height: 1;
+  opacity: 0;
   cursor: grab;
   user-select: none;
+  transition: opacity 120ms ease;
 }
 
-.studio-drag-handle:active {
+.studio-drag-handle {
+  width: 22px;
+  padding: 12px 0 0;
+}
+
+.studio-image-drag-handle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.85);
+}
+
+.studio-block:hover .studio-drag-handle,
+.studio-block.is-selected .studio-drag-handle,
+.studio-row-slot:hover .studio-image-drag-handle,
+.studio-block.is-selected .studio-image-drag-handle {
+  opacity: 1;
+}
+
+.studio-drag-handle:active,
+.studio-image-drag-handle:active {
   cursor: grabbing;
 }
 
@@ -543,17 +612,54 @@
 .studio-block .story-caption,
 .studio-block .story-location,
 .studio-block .story-photo,
-.studio-block .story-photo-pair {
+.studio-block .story-photo-pair,
+.studio-block .studio-triple-row {
   margin-bottom: 0;
 }
 
-.studio-block .story-photo-trigger {
+.studio-row-slot {
+  position: relative;
+  margin: 0;
+  min-width: 0;
+}
+
+.studio-row-slot.is-dragging {
+  opacity: 0.35;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+}
+
+.studio-row-media {
+  min-width: 0;
+}
+
+.studio-row-media .image-frame,
+.studio-row-media .studio-photo-placeholder {
+  display: block;
+  width: 100%;
+}
+
+.studio-row-track.studio-triple-row > .studio-row-slot {
+  min-width: 0;
+}
+
+.studio-drag-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  padding: 6px 10px;
+  border: 1px solid var(--studio-border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--studio-text);
+  font: 12px/1.2 var(--studio-font);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 10%);
   pointer-events: none;
+  z-index: 9999;
 }
 
 .story-narrative.is-reordering .studio-drop-slot {
-  height: 18px;
-  margin: 0 0 -4px;
+  height: 16px;
+  margin: 0 0 -2px;
 }
 
 .studio-toggle-btn {
