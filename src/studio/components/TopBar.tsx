@@ -1,11 +1,34 @@
-import { useStudioDraft } from '../StudioDraftContext'
+import { useStudioDraft, type SaveStatus } from '../StudioDraftContext'
 
 type TopBarProps = {
   onExit: () => void
 }
 
+function saveStatusLabel(status: SaveStatus): string {
+  switch (status) {
+    case 'loading':
+      return 'Loading draft…'
+    case 'saving':
+      return 'Saving…'
+    case 'unsaved':
+      return 'Unsaved'
+    case 'unavailable':
+      return 'Local saving unavailable'
+    case 'saved':
+    default:
+      return 'Saved locally'
+  }
+}
+
 export function TopBar({ onExit }: TopBarProps) {
-  const { draft, previewLocale, previewViewport, setPreviewLocale, setPreviewViewport } = useStudioDraft()
+  const {
+    draft,
+    previewLocale,
+    previewViewport,
+    saveStatus,
+    setPreviewLocale,
+    setPreviewViewport,
+  } = useStudioDraft()
 
   return (
     <header className="studio-topbar">
@@ -27,7 +50,9 @@ export function TopBar({ onExit }: TopBarProps) {
       <div className="studio-topbar-center">
         <h1 className="studio-title">{draft.title}</h1>
         <span className="studio-pill">Draft</span>
-        <span className="studio-save">Saved locally</span>
+        <span className="studio-save" aria-live="polite">
+          {saveStatusLabel(saveStatus)}
+        </span>
       </div>
 
       <div className="studio-topbar-right">

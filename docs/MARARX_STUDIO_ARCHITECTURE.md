@@ -97,3 +97,35 @@ Confirmed gap (also in `docs/DEVELOPER_HANDOFF.md` §6): no per-image intrinsic 
 ## Phase 1 foundation (this pass)
 
 Isolated `/studio` shell under `src/studio/`, mock UI only, canvas demo using `SiteImage` + public story/journal CSS classes and existing files under `public/images/`. No persistence, DnD, filesystem writes, data migrations, or MUI.
+
+---
+
+## Phase 3 — Local draft persistence
+
+### Draft document schema (`src/studio/draftDocument.ts`)
+
+JSON-compatible envelope stored in IndexedDB:
+
+```ts
+{
+  schemaVersion: 1,
+  id: string,            // working key; Phase 3 uses "default"
+  updatedAt: string,     // ISO timestamp
+  draft: {
+    title: string,
+    kicker: string,      // date · location line shown in the shell
+    intro: string,
+    blocks: StudioBlock[]  // ordered; types text | image | image-row |
+                           // image-triple | caption | location
+  }
+}
+```
+
+Each block keeps its existing in-memory shape: `type`, layout presets (`size` / `layout`), image refs + captions, and EN/RU `LocalizedText` fields. Selection and preview UI state are **not** persisted.
+
+### Storage
+
+- IndexedDB database `mararx-studio`, object store `drafts`, keyPath `id`.
+- Helpers: `src/studio/persist/draftStore.ts` (hand-rolled; no persistence framework).
+- Debounced autosave (~450ms) on draft changes; top-bar status: loading / unsaved / saving / saved / unavailable.
+- On `/studio` load: restore document `default` when valid; otherwise seed from `mockDraft`. If IndexedDB fails, Studio stays in-memory for the session and the top bar notes that local saving is unavailable.

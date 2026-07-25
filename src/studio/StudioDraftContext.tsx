@@ -2,16 +2,22 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import type { Locale } from '../i18n/types'
 import { createBlock } from './blockFactory'
+import { DEFAULT_DRAFT_ID, toDraftDocument } from './draftDocument'
 import { initialDraft } from './mockDraft'
+import { loadDraftDocument, saveDraftDocument } from './persist/draftStore'
 import type { AddBlockKind, StudioBlock, StudioDraft } from './types'
 
 export type PreviewViewport = 'desktop' | 'mobile'
+
+export type SaveStatus = 'loading' | 'saving' | 'saved' | 'unsaved' | 'unavailable'
 
 type StudioDraftContextValue = {
   draft: StudioDraft
@@ -19,6 +25,8 @@ type StudioDraftContextValue = {
   selectedBlock: StudioBlock | null
   previewLocale: Locale
   previewViewport: PreviewViewport
+  saveStatus: SaveStatus
+  ready: boolean
   selectBlock: (id: string | null) => void
   setPreviewLocale: (locale: Locale) => void
   setPreviewViewport: (viewport: PreviewViewport) => void
@@ -31,11 +39,88 @@ type StudioDraftContextValue = {
 
 const StudioDraftContext = createContext<StudioDraftContextValue | null>(null)
 
+const SAVE_DEBOUNCE_MS = 450
+
 export function StudioDraftProvider({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState<StudioDraft>(initialDraft)
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
   const [previewLocale, setPreviewLocale] = useState<Locale>('en')
   const [previewViewport, setPreviewViewport] = useState<PreviewViewport>('desktop')
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('loading')
+  const [ready, setReady] = useState(false)
+
+  const persistEnabledRef = useRef(true)
+  const skipNextPersistRef = useRef(true)
+  const saveTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const stored = await loadDraftDocument(DEFAULT_DRAFT_ID)
+        if (cancelled) return
+
+        if (stored) {
+          skipNextPersistRef.current = true
+          setDraft(stored.draft)
+          setSaveStatus('saved')
+        } else {
+          skipNextPersistRef.current = true
+          setSaveStatus('saved')
+        }
+      } catch {
+        if (cancelled) return
+        persistEnabledRef.current = false
+        skipNextPersistRef.current = true
+        setSaveStatus('unavailable')
+      } finally {
+        if (!cancelled) setReady(true)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!ready || !persistEnabledRef.current) return
+
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false
+      return
+    }
+
+    setSaveStatus('unsaved')
+
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current)
+    }
+
+    saveTimerRef.current = window.setTimeout(() => {
+      saveTimerRef.current = null
+      setSaveStatus('saving')
+
+      const document = toDraftDocument(draft, DEFAULT_DRAFT_ID)
+      void saveDraftDocument(document)
+        .then(() => {
+          if (!persistEnabledRef.current) return
+          setSaveStatus('saved')
+        })
+        .catch(() => {
+          persistEnabledRef.current = false
+          setSaveStatus('unavailable')
+        })
+    }, SAVE_DEBOUNCE_MS)
+
+    return () => {
+      if (saveTimerRef.current !== null) {
+        window.clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = null
+      }
+    }
+  }, [draft, ready])
 
   const selectBlock = useCallback((id: string | null) => {
     setSelectedBlockId(id)
@@ -139,6 +224,8 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
       selectedBlock,
       previewLocale,
       previewViewport,
+      saveStatus,
+      ready,
       selectBlock,
       setPreviewLocale,
       setPreviewViewport,
@@ -154,6 +241,8 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
       selectedBlock,
       previewLocale,
       previewViewport,
+      saveStatus,
+      ready,
       selectBlock,
       updateBlock,
       reorderBlocks,
