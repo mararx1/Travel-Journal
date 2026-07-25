@@ -1,4 +1,4 @@
-# mararx.com
+# Travel Journal
 
 Denis's personal photo journal and travel diary. A visual, editorial site for
 publishing photography, short observations, and longer travel stories — mainly
