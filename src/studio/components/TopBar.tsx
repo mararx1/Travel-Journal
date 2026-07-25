@@ -1,4 +1,5 @@
 import { useStudioDraft, type SaveStatus } from '../StudioDraftContext'
+import { GeneratePanel } from './GeneratePanel'
 
 type TopBarProps = {
   onExit: () => void
@@ -88,9 +89,7 @@ export function TopBar({ onExit }: TopBarProps) {
             Mobile
           </button>
         </div>
-        <button type="button" className="studio-btn studio-btn-primary" disabled>
-          Publish
-        </button>
+        <GeneratePanel />
       </div>
     </header>
   )

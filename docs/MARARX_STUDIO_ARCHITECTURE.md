@@ -145,3 +145,13 @@ Each block keeps its existing in-memory shape: `type`, layout presets (`size` / 
 - On first transition to `used`, Studio writes a **web derivative** (canvas resize, long edge ≤ 1800px, WebP or JPEG ~0.82) into the publication folder; source archive stays untouched (no original copy into pub).
 - Intrinsic `width` / `height` captured on `MediaAsset` and `StudioImage` (Inspector shows `W × H` for photo blocks). Not yet consumed by public `SiteImage`.
 - Asset status may be `missing` when the source handle fails; Library/Canvas show a muted broken placeholder; **Re-link** picks a new file and preserves block captions/layout (and refreshes the derivative when the asset was used).
+
+---
+
+## Phase 5 slice 1 — Generate Story content (draft output)
+
+- `src/studio/generate/generateStoryContent.ts` maps Studio draft + media assets → public `StoryContentBlock[]` + Story preview shape (`LocalizedText` preserved).
+- Publication image paths use `/images/stories/<publishedName>` when a derivative exists; otherwise existing `/images/...` srcs.
+- `image-triple` is not a public Story block type → exported as three single images (with a validation warning).
+- **Generate** (top bar) writes inspect-only files under `docs/studio-output/` via Vite dev middleware `POST /__studio/write-output` (in `vite.config.ts`). Falls back to browser download if the endpoint is unavailable. Does **not** touch `src/data/*`.
+- Validation warnings (cover/title/translations/missing assets/broken refs/video URL) are non-blocking.

@@ -29,6 +29,10 @@ dist/
 debug-*.png
 debug-*.jpg
 
+# Studio Phase 5 inspect-only generated drafts (not live site data)
+docs/studio-output/*
+!docs/studio-output/.gitkeep
+
 # Raw camera originals kept for local reference only.
 # These are byte-identical sources for the renamed, deployed
 # copies already tracked under public/images/. See README.md
