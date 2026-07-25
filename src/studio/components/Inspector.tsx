@@ -1,4 +1,6 @@
+import type { LocalizedText } from '../../i18n/types'
 import { useStudioDraft } from '../StudioDraftContext'
+import { localizedValue, setLocalizedField } from '../localized'
 import type {
   ImageRowLayout,
   ImageSize,
@@ -6,14 +8,6 @@ import type {
   StudioBlock,
   StudioImage,
 } from '../types'
-
-function enText(value?: { en: string; ru?: string }) {
-  return value?.en ?? ''
-}
-
-function withEn(current: { en: string; ru?: string } | undefined, en: string) {
-  return { en, ru: current?.ru }
-}
 
 function updateImageInBlock(
   block: Extract<StudioBlock, { type: 'image' }>,
@@ -42,15 +36,44 @@ function updateTripleImage(
   return { ...block, images }
 }
 
+function LocalizedFields({
+  label,
+  value,
+  rows = 3,
+  onChange,
+}: {
+  label: string
+  value: LocalizedText | undefined
+  rows?: number
+  onChange: (next: LocalizedText) => void
+}) {
+  return (
+    <div className="studio-localized-fields">
+      <label className="studio-field">
+        <span>{label} (EN)</span>
+        <textarea
+          rows={rows}
+          value={localizedValue(value, 'en')}
+          onChange={(event) => onChange(setLocalizedField(value, 'en', event.target.value))}
+        />
+      </label>
+      <label className="studio-field">
+        <span>{label} (RU)</span>
+        <textarea
+          rows={rows}
+          value={localizedValue(value, 'ru')}
+          onChange={(event) => onChange(setLocalizedField(value, 'ru', event.target.value))}
+        />
+      </label>
+    </div>
+  )
+}
+
 function DeleteBlockButton({ blockId }: { blockId: string }) {
   const { deleteBlock } = useStudioDraft()
   return (
     <div className="studio-panel-footer">
-      <button
-        type="button"
-        className="studio-delete"
-        onClick={() => deleteBlock(blockId)}
-      >
+      <button type="button" className="studio-delete" onClick={() => deleteBlock(blockId)}>
         Delete block
       </button>
     </div>
@@ -69,20 +92,17 @@ function BlockInspector({
       <>
         <div className="studio-panel-scroll">
           <h2 className="studio-inspector-title">Text</h2>
-          <p className="studio-inspector-desc">Editing EN only. RU fields not wired yet.</p>
-          <label className="studio-field">
-            <span>Content (EN)</span>
-            <textarea
-              rows={6}
-              value={block.content.en}
-              onChange={(event) => {
-                const en = event.target.value
-                updateBlock(block.id, (current) =>
-                  current.type === 'text' ? { ...current, content: withEn(current.content, en) } : current,
-                )
-              }}
-            />
-          </label>
+          <p className="studio-inspector-desc">EN and RU edit independently. Canvas uses EN fallback for empty RU.</p>
+          <LocalizedFields
+            label="Content"
+            value={block.content}
+            rows={5}
+            onChange={(content) =>
+              updateBlock(block.id, (current) =>
+                current.type === 'text' ? { ...current, content } : current,
+              )
+            }
+          />
         </div>
         <DeleteBlockButton blockId={block.id} />
       </>
@@ -94,19 +114,16 @@ function BlockInspector({
       <>
         <div className="studio-panel-scroll">
           <h2 className="studio-inspector-title">Caption</h2>
-          <label className="studio-field">
-            <span>Caption (EN)</span>
-            <textarea
-              rows={4}
-              value={block.content.en}
-              onChange={(event) => {
-                const en = event.target.value
-                updateBlock(block.id, (current) =>
-                  current.type === 'caption' ? { ...current, content: withEn(current.content, en) } : current,
-                )
-              }}
-            />
-          </label>
+          <LocalizedFields
+            label="Caption"
+            value={block.content}
+            rows={3}
+            onChange={(content) =>
+              updateBlock(block.id, (current) =>
+                current.type === 'caption' ? { ...current, content } : current,
+              )
+            }
+          />
         </div>
         <DeleteBlockButton blockId={block.id} />
       </>
@@ -118,34 +135,28 @@ function BlockInspector({
       <>
         <div className="studio-panel-scroll">
           <h2 className="studio-inspector-title">Location</h2>
-          <label className="studio-field">
-            <span>Label (EN)</span>
-            <input
-              type="text"
-              value={block.label.en}
-              onChange={(event) => {
-                const en = event.target.value
-                updateBlock(block.id, (current) =>
-                  current.type === 'location' ? { ...current, label: withEn(current.label, en) } : current,
-                )
-              }}
-            />
-          </label>
-          <label className="studio-field">
-            <span>Coordinates (EN)</span>
-            <input
-              type="text"
-              value={enText(block.coordinates)}
-              onChange={(event) => {
-                const en = event.target.value
-                updateBlock(block.id, (current) =>
-                  current.type === 'location'
-                    ? { ...current, coordinates: en ? withEn(current.coordinates, en) : undefined }
-                    : current,
-                )
-              }}
-            />
-          </label>
+          <LocalizedFields
+            label="Label"
+            value={block.label}
+            rows={2}
+            onChange={(label) =>
+              updateBlock(block.id, (current) =>
+                current.type === 'location' ? { ...current, label } : current,
+              )
+            }
+          />
+          <LocalizedFields
+            label="Coordinates"
+            value={block.coordinates}
+            rows={2}
+            onChange={(coordinates) =>
+              updateBlock(block.id, (current) =>
+                current.type === 'location'
+                  ? { ...current, coordinates: coordinates.en || coordinates.ru ? coordinates : undefined }
+                  : current,
+              )
+            }
+          />
         </div>
         <DeleteBlockButton blockId={block.id} />
       </>
@@ -157,7 +168,6 @@ function BlockInspector({
       <>
         <div className="studio-panel-scroll">
           <h2 className="studio-inspector-title">Photo</h2>
-          <p className="studio-inspector-desc">Editing EN only. RU fields not wired yet.</p>
           <label className="studio-field">
             <span>Layout preset</span>
             <select
@@ -174,38 +184,34 @@ function BlockInspector({
               <option value="portrait">Portrait</option>
             </select>
           </label>
-          <label className="studio-field">
-            <span>Alt text (EN)</span>
-            <input
-              type="text"
-              value={enText(block.image.alt)}
-              onChange={(event) => {
-                const en = event.target.value
-                updateBlock(block.id, (current) =>
-                  current.type === 'image'
-                    ? updateImageInBlock(current, { alt: en ? withEn(current.image.alt, en) : undefined })
-                    : current,
-                )
-              }}
-            />
-          </label>
-          <label className="studio-field">
-            <span>Caption (EN)</span>
-            <textarea
-              rows={3}
-              value={enText(block.image.caption)}
-              onChange={(event) => {
-                const en = event.target.value
-                updateBlock(block.id, (current) =>
-                  current.type === 'image'
-                    ? updateImageInBlock(current, {
-                        caption: en ? withEn(current.image.caption, en) : undefined,
-                      })
-                    : current,
-                )
-              }}
-            />
-          </label>
+          <LocalizedFields
+            label="Alt text"
+            value={block.image.alt}
+            rows={2}
+            onChange={(alt) =>
+              updateBlock(block.id, (current) =>
+                current.type === 'image'
+                  ? updateImageInBlock(current, {
+                      alt: alt.en || alt.ru ? alt : undefined,
+                    })
+                  : current,
+              )
+            }
+          />
+          <LocalizedFields
+            label="Caption"
+            value={block.image.caption}
+            rows={3}
+            onChange={(caption) =>
+              updateBlock(block.id, (current) =>
+                current.type === 'image'
+                  ? updateImageInBlock(current, {
+                      caption: caption.en || caption.ru ? caption : undefined,
+                    })
+                  : current,
+              )
+            }
+          />
           <button
             type="button"
             className="studio-toggle-row studio-toggle-btn"
@@ -229,7 +235,6 @@ function BlockInspector({
       <>
         <div className="studio-panel-scroll">
           <h2 className="studio-inspector-title">Three photos</h2>
-          <p className="studio-inspector-desc">Presets limited to three-image layouts.</p>
           <label className="studio-field">
             <span>Layout preset</span>
             <select
@@ -246,23 +251,21 @@ function BlockInspector({
             </select>
           </label>
           {block.images.map((image, index) => (
-            <label className="studio-field" key={`${block.id}-cap-${index}`}>
-              <span>{`Caption ${index + 1} (EN)`}</span>
-              <textarea
-                rows={2}
-                value={enText(image.caption)}
-                onChange={(event) => {
-                  const en = event.target.value
-                  updateBlock(block.id, (current) =>
-                    current.type === 'image-triple'
-                      ? updateTripleImage(current, index as 0 | 1 | 2, {
-                          caption: en ? withEn(current.images[index].caption, en) : undefined,
-                        })
-                      : current,
-                  )
-                }}
-              />
-            </label>
+            <LocalizedFields
+              key={`${block.id}-cap-${index}`}
+              label={`Caption ${index + 1}`}
+              value={image.caption}
+              rows={2}
+              onChange={(caption) =>
+                updateBlock(block.id, (current) =>
+                  current.type === 'image-triple'
+                    ? updateTripleImage(current, index as 0 | 1 | 2, {
+                        caption: caption.en || caption.ru ? caption : undefined,
+                      })
+                    : current,
+                )
+              }
+            />
           ))}
           <button
             type="button"
@@ -286,7 +289,6 @@ function BlockInspector({
     <>
       <div className="studio-panel-scroll">
         <h2 className="studio-inspector-title">Image row</h2>
-        <p className="studio-inspector-desc">Two-image presets only. Editing EN only.</p>
         <label className="studio-field">
           <span>Layout preset</span>
           <select
@@ -304,40 +306,34 @@ function BlockInspector({
             <option value="portrait-pair">Portrait pair</option>
           </select>
         </label>
-        <label className="studio-field">
-          <span>Left caption (EN)</span>
-          <textarea
-            rows={2}
-            value={enText(block.images[0].caption)}
-            onChange={(event) => {
-              const en = event.target.value
-              updateBlock(block.id, (current) =>
-                current.type === 'image-row'
-                  ? updateRowImage(current, 0, {
-                      caption: en ? withEn(current.images[0].caption, en) : undefined,
-                    })
-                  : current,
-              )
-            }}
-          />
-        </label>
-        <label className="studio-field">
-          <span>Right caption (EN)</span>
-          <textarea
-            rows={2}
-            value={enText(block.images[1].caption)}
-            onChange={(event) => {
-              const en = event.target.value
-              updateBlock(block.id, (current) =>
-                current.type === 'image-row'
-                  ? updateRowImage(current, 1, {
-                      caption: en ? withEn(current.images[1].caption, en) : undefined,
-                    })
-                  : current,
-              )
-            }}
-          />
-        </label>
+        <LocalizedFields
+          label="Left caption"
+          value={block.images[0].caption}
+          rows={2}
+          onChange={(caption) =>
+            updateBlock(block.id, (current) =>
+              current.type === 'image-row'
+                ? updateRowImage(current, 0, {
+                    caption: caption.en || caption.ru ? caption : undefined,
+                  })
+                : current,
+            )
+          }
+        />
+        <LocalizedFields
+          label="Right caption"
+          value={block.images[1].caption}
+          rows={2}
+          onChange={(caption) =>
+            updateBlock(block.id, (current) =>
+              current.type === 'image-row'
+                ? updateRowImage(current, 1, {
+                    caption: caption.en || caption.ru ? caption : undefined,
+                  })
+                : current,
+            )
+          }
+        />
         <button
           type="button"
           className="studio-toggle-row studio-toggle-btn"
@@ -370,34 +366,7 @@ export function Inspector() {
       ) : (
         <div className="studio-panel-scroll">
           <h2 className="studio-inspector-title">Inspector</h2>
-          <p className="studio-inspector-desc">Static placeholder. No state wiring.</p>
-
-          <label className="studio-field">
-            <span>Title</span>
-            <input type="text" value="Untitled Story" disabled readOnly />
-          </label>
-
-          <label className="studio-field">
-            <span>Layout preset</span>
-            <select disabled defaultValue="full">
-              <option value="full">Full width photo</option>
-              <option value="pair">Portrait pair</option>
-            </select>
-          </label>
-
-          <label className="studio-field">
-            <span>Caption (EN)</span>
-            <textarea rows={3} disabled readOnly value="" placeholder="—" />
-          </label>
-
-          <div className="studio-toggle-row">
-            <span>Show caption</span>
-            <span className="studio-toggle" aria-hidden="true" />
-          </div>
-          <div className="studio-toggle-row">
-            <span>Open in lightbox</span>
-            <span className="studio-toggle is-on" aria-hidden="true" />
-          </div>
+          <p className="studio-inspector-desc">Select a block to edit EN/RU fields and layout.</p>
         </div>
       )}
     </aside>

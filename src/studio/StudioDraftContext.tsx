@@ -6,15 +6,22 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import type { Locale } from '../i18n/types'
 import { createBlock } from './blockFactory'
 import { initialDraft } from './mockDraft'
 import type { AddBlockKind, StudioBlock, StudioDraft } from './types'
+
+export type PreviewViewport = 'desktop' | 'mobile'
 
 type StudioDraftContextValue = {
   draft: StudioDraft
   selectedBlockId: string | null
   selectedBlock: StudioBlock | null
+  previewLocale: Locale
+  previewViewport: PreviewViewport
   selectBlock: (id: string | null) => void
+  setPreviewLocale: (locale: Locale) => void
+  setPreviewViewport: (viewport: PreviewViewport) => void
   updateBlock: (id: string, updater: (block: StudioBlock) => StudioBlock) => void
   reorderBlocks: (fromIndex: number, insertBeforeIndex: number) => void
   addBlock: (kind: AddBlockKind, insertBeforeIndex: number) => void
@@ -26,6 +33,8 @@ const StudioDraftContext = createContext<StudioDraftContextValue | null>(null)
 export function StudioDraftProvider({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState<StudioDraft>(initialDraft)
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
+  const [previewLocale, setPreviewLocale] = useState<Locale>('en')
+  const [previewViewport, setPreviewViewport] = useState<PreviewViewport>('desktop')
 
   const selectBlock = useCallback((id: string | null) => {
     setSelectedBlockId(id)
@@ -90,7 +99,11 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
       draft,
       selectedBlockId,
       selectedBlock,
+      previewLocale,
+      previewViewport,
       selectBlock,
+      setPreviewLocale,
+      setPreviewViewport,
       updateBlock,
       reorderBlocks,
       addBlock,
@@ -100,6 +113,8 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
       draft,
       selectedBlockId,
       selectedBlock,
+      previewLocale,
+      previewViewport,
       selectBlock,
       updateBlock,
       reorderBlocks,

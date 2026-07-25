@@ -8,10 +8,18 @@ import {
   type ReactNode,
 } from 'react'
 import { SiteImage } from '../../components/SiteImage'
+import { localize } from '../../i18n/locale'
+import type { LocalizedText } from '../../i18n/types'
 import { useStudioDraft } from '../StudioDraftContext'
 import type { StudioBlock } from '../types'
 import { AddBlockControl } from './AddBlockControl'
 import { StudioPhoto } from './StudioPhoto'
+
+function textOrFallback(value: LocalizedText | undefined, locale: 'en' | 'ru', empty: string) {
+  if (!value) return empty
+  const shown = localize(value, locale)
+  return shown || empty
+}
 
 function BlockShell({
   block,
@@ -76,7 +84,14 @@ function DropIndicator({ active }: { active: boolean }) {
 }
 
 export function Canvas() {
-  const { draft, selectedBlockId, selectBlock, reorderBlocks } = useStudioDraft()
+  const {
+    draft,
+    selectedBlockId,
+    selectBlock,
+    reorderBlocks,
+    previewLocale,
+    previewViewport,
+  } = useStudioDraft()
   const [dragId, setDragId] = useState<string | null>(null)
   const [insertBefore, setInsertBefore] = useState<number | null>(null)
   const didDropRef = useRef(false)
@@ -151,7 +166,9 @@ export function Canvas() {
     if (block.type === 'text') {
       return (
         <BlockShell key={block.id} {...shellProps}>
-          <p className="story-text">{block.content.en || 'Empty text block'}</p>
+          <p className="story-text">
+            {textOrFallback(block.content, previewLocale, 'Empty text block')}
+          </p>
         </BlockShell>
       )
     }
@@ -159,7 +176,9 @@ export function Canvas() {
     if (block.type === 'caption') {
       return (
         <BlockShell key={block.id} {...shellProps}>
-          <p className="story-caption">{block.content.en || 'Empty caption'}</p>
+          <p className="story-caption">
+            {textOrFallback(block.content, previewLocale, 'Empty caption')}
+          </p>
         </BlockShell>
       )
     }
@@ -168,8 +187,10 @@ export function Canvas() {
       return (
         <BlockShell key={block.id} {...shellProps}>
           <aside className="story-location">
-            <p>{block.label.en || 'Location'}</p>
-            {block.coordinates?.en && <p>{block.coordinates.en}</p>}
+            <p>{textOrFallback(block.label, previewLocale, 'Location')}</p>
+            {block.coordinates && (
+              <p>{localize(block.coordinates, previewLocale)}</p>
+            )}
           </aside>
         </BlockShell>
       )
@@ -184,8 +205,10 @@ export function Canvas() {
                 <div className="story-photo-trigger">
                   <StudioPhoto image={image} />
                 </div>
-                {block.showCaption && image.caption?.en && (
-                  <figcaption className="story-caption">{image.caption.en}</figcaption>
+                {block.showCaption && image.caption && localize(image.caption, previewLocale) && (
+                  <figcaption className="story-caption">
+                    {localize(image.caption, previewLocale)}
+                  </figcaption>
                 )}
               </figure>
             ))}
@@ -201,8 +224,8 @@ export function Canvas() {
             {block.images.map((image, index) => (
               <div className="featured-photo" key={`${block.id}-${index}`}>
                 <StudioPhoto image={image} />
-                {block.showCaption && image.caption?.en && (
-                  <span className="photo-label">{image.caption.en}</span>
+                {block.showCaption && image.caption && localize(image.caption, previewLocale) && (
+                  <span className="photo-label">{localize(image.caption, previewLocale)}</span>
                 )}
               </div>
             ))}
@@ -217,8 +240,10 @@ export function Canvas() {
           <div className="story-photo-trigger">
             <StudioPhoto image={block.image} eager={block.id === draft.blocks[0]?.id} />
           </div>
-          {block.showCaption && block.image.caption?.en && (
-            <figcaption className="story-caption">{block.image.caption.en}</figcaption>
+          {block.showCaption && block.image.caption && localize(block.image.caption, previewLocale) && (
+            <figcaption className="story-caption">
+              {localize(block.image.caption, previewLocale)}
+            </figcaption>
           )}
         </figure>
       </BlockShell>
@@ -226,9 +251,10 @@ export function Canvas() {
   }
 
   return (
-    <main className="studio-canvas-wrap">
+    <main className={`studio-canvas-wrap studio-canvas-wrap--${previewViewport}`}>
       <article
         className="studio-canvas"
+        data-preview-locale={previewLocale}
         onClick={() => selectBlock(null)}
         onDragOver={(event) => {
           if (!dragId) return

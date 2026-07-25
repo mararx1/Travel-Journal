@@ -51,6 +51,80 @@
 
 .studio-topbar-right {
   justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.studio-seg {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--studio-border);
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.studio-seg button {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--studio-muted);
+  cursor: pointer;
+}
+
+.studio-seg button.is-active {
+  background: #fff;
+  color: var(--studio-text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  font-weight: 600;
+}
+
+.studio-canvas-wrap--mobile {
+  display: flex;
+  justify-content: center;
+  padding-inline: 16px;
+}
+
+.studio-canvas-wrap--mobile .studio-canvas {
+  width: 100%;
+  max-width: 390px;
+}
+
+/* Mirror public @media (max-width: 767px) story layout inside mobile preview width. */
+.studio-canvas-wrap--mobile .story-narrative {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.studio-canvas-wrap--mobile .story-photo--full,
+.studio-canvas-wrap--mobile .story-photo--medium,
+.studio-canvas-wrap--mobile .story-photo--portrait {
+  grid-column: 1;
+  width: 100%;
+}
+
+.studio-canvas-wrap--mobile .story-photo-pair {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.studio-canvas-wrap--mobile .jrow,
+.studio-canvas-wrap--mobile .studio-triple-row {
+  grid-template-columns: 1fr;
+  grid-template-rows: none;
+  height: auto;
+  gap: 12px;
+}
+
+.studio-canvas-wrap--mobile .featured-photo {
+  height: auto;
+  max-height: min(80vh, 680px);
+}
+
+.studio-localized-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .studio-topbar-center {
