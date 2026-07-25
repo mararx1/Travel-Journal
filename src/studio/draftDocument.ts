@@ -49,6 +49,7 @@ function isLocalizedText(value: unknown): value is LocalizedText {
 
 function isStudioImage(value: unknown): value is StudioImage {
   if (!isRecord(value) || typeof value.src !== 'string') return false
+  if (value.assetId !== undefined && typeof value.assetId !== 'string') return false
   if (value.alt !== undefined && !isLocalizedText(value.alt)) return false
   if (value.caption !== undefined && !isLocalizedText(value.caption)) return false
   if (

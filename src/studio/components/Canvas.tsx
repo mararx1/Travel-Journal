@@ -10,10 +10,15 @@ import {
 import { SiteImage } from '../../components/SiteImage'
 import { localize } from '../../i18n/locale'
 import type { LocalizedText } from '../../i18n/types'
+import { ASSET_DRAG_MIME, useMediaLibrary } from '../MediaLibraryContext'
 import { useStudioDraft } from '../StudioDraftContext'
 import type { StudioBlock, StudioImage } from '../types'
 import { AddBlockControl } from './AddBlockControl'
 import { StudioPhoto } from './StudioPhoto'
+
+function isAssetDrag(dataTransfer: DataTransfer) {
+  return [...dataTransfer.types].includes(ASSET_DRAG_MIME)
+}
 
 type BlockDrag = {
   kind: 'block'
@@ -119,6 +124,8 @@ function RowImages({
   onImageDragEnd,
   onImageDragOver,
   onImageDrop,
+  onAssetDragOver,
+  onAssetDrop,
 }: {
   blockId: string
   layoutClassName: string
@@ -130,6 +137,8 @@ function RowImages({
   onImageDragEnd: () => void
   onImageDragOver: (event: DragEvent, blockId: string, insertBefore: number) => void
   onImageDrop: (event: DragEvent, blockId: string, insertBefore: number) => void
+  onAssetDragOver: (event: DragEvent) => void
+  onAssetDrop: (event: DragEvent, blockId: string, slotIndex: number) => void
 }) {
   const active = imageDrag?.blockId === blockId
 
@@ -152,9 +161,17 @@ function RowImages({
             className={`studio-row-slot${dragging ? ' is-dragging' : ''}`}
             data-image-index={index}
             onDragOver={(event) => {
+              if (isAssetDrag(event.dataTransfer)) {
+                onAssetDragOver(event)
+                return
+              }
               onImageDragOver(event, blockId, resolveInsertBefore(event, index))
             }}
             onDrop={(event) => {
+              if (isAssetDrag(event.dataTransfer)) {
+                onAssetDrop(event, blockId, index)
+                return
+              }
               onImageDrop(event, blockId, resolveInsertBefore(event, index))
             }}
           >
@@ -203,6 +220,7 @@ export function Canvas() {
     previewLocale,
     previewViewport,
   } = useStudioDraft()
+  const { applyAssetToSlot } = useMediaLibrary()
   const [drag, setDrag] = useState<DragState>(null)
   const didDropRef = useRef(false)
   const ghostRef = useRef<HTMLElement | null>(null)
@@ -307,6 +325,22 @@ export function Canvas() {
     clearDrag()
   }
 
+  function handleAssetDragOver(event: DragEvent) {
+    if (!isAssetDrag(event.dataTransfer)) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = 'copy'
+  }
+
+  function handleAssetDrop(event: DragEvent, blockId: string, slotIndex: number) {
+    if (!isAssetDrag(event.dataTransfer)) return
+    event.preventDefault()
+    event.stopPropagation()
+    const assetId = event.dataTransfer.getData(ASSET_DRAG_MIME)
+    if (!assetId) return
+    void applyAssetToSlot(assetId, blockId, slotIndex)
+  }
+
   const imageDrag = drag?.kind === 'image' ? drag : null
   const blockDragId = drag?.kind === 'block' ? drag.id : null
   const blockInsertBefore = drag?.kind === 'block' ? drag.insertBefore : null
@@ -370,6 +404,8 @@ export function Canvas() {
             onImageDragEnd={handleDragEnd}
             onImageDragOver={handleImageDragOver}
             onImageDrop={handleImageDrop}
+            onAssetDragOver={handleAssetDragOver}
+            onAssetDrop={handleAssetDrop}
           />
         </BlockShell>
       )
@@ -389,6 +425,8 @@ export function Canvas() {
             onImageDragEnd={handleDragEnd}
             onImageDragOver={handleImageDragOver}
             onImageDrop={handleImageDrop}
+            onAssetDragOver={handleAssetDragOver}
+            onAssetDrop={handleAssetDrop}
           />
         </BlockShell>
       )
@@ -396,7 +434,11 @@ export function Canvas() {
 
     return (
       <BlockShell key={block.id} {...shellProps}>
-        <figure className={`story-photo story-photo--${block.size}`}>
+        <figure
+          className={`story-photo story-photo--${block.size}`}
+          onDragOver={handleAssetDragOver}
+          onDrop={(event) => handleAssetDrop(event, block.id, 0)}
+        >
           <div className="studio-row-media">
             <StudioPhoto image={block.image} eager={block.id === draft.blocks[0]?.id} />
           </div>

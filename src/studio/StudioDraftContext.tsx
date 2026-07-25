@@ -13,7 +13,7 @@ import { createBlock } from './blockFactory'
 import { DEFAULT_DRAFT_ID, toDraftDocument } from './draftDocument'
 import { initialDraft } from './mockDraft'
 import { loadDraftDocument, saveDraftDocument } from './persist/draftStore'
-import type { AddBlockKind, StudioBlock, StudioDraft } from './types'
+import type { AddBlockKind, StudioBlock, StudioDraft, StudioImage } from './types'
 
 export type PreviewViewport = 'desktop' | 'mobile'
 
@@ -34,6 +34,7 @@ type StudioDraftContextValue = {
   reorderBlocks: (fromIndex: number, insertBeforeIndex: number) => void
   reorderRowImages: (blockId: string, fromIndex: number, insertBeforeIndex: number) => void
   addBlock: (kind: AddBlockKind, insertBeforeIndex: number) => void
+  insertImageBlock: (image: StudioImage, insertBeforeIndex: number) => void
   deleteBlock: (id: string) => void
 }
 
@@ -204,6 +205,19 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
     setSelectedBlockId(block.id)
   }, [])
 
+  const insertImageBlock = useCallback((image: StudioImage, insertBeforeIndex: number) => {
+    const created = createBlock('image')
+    if (created.type !== 'image') return
+    const block: StudioBlock = { ...created, image, showCaption: false }
+    setDraft((current) => {
+      const blocks = [...current.blocks]
+      const index = Math.max(0, Math.min(insertBeforeIndex, blocks.length))
+      blocks.splice(index, 0, block)
+      return { ...current, blocks }
+    })
+    setSelectedBlockId(block.id)
+  }, [])
+
   const deleteBlock = useCallback((id: string) => {
     setDraft((current) => ({
       ...current,
@@ -233,6 +247,7 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
       reorderBlocks,
       reorderRowImages,
       addBlock,
+      insertImageBlock,
       deleteBlock,
     }),
     [
@@ -248,6 +263,7 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
       reorderBlocks,
       reorderRowImages,
       addBlock,
+      insertImageBlock,
       deleteBlock,
     ],
   )

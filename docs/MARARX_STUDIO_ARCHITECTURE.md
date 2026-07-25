@@ -129,3 +129,13 @@ Each block keeps its existing in-memory shape: `type`, layout presets (`size` / 
 - Helpers: `src/studio/persist/draftStore.ts` (hand-rolled; no persistence framework).
 - Debounced autosave (~450ms) on draft changes; top-bar status: loading / unsaved / saving / saved / unavailable.
 - On `/studio` load: restore document `default` when valid; otherwise seed from `mockDraft`. If IndexedDB fails, Studio stays in-memory for the session and the top bar notes that local saving is unavailable.
+
+---
+
+## Phase 4 slice 1 — Local folder import & publication copy
+
+- Library uses File System Access `showDirectoryPicker` when available; unsupported browsers keep the placeholder list + a short note.
+- Source folder: shallow list of image files (`jpg/jpeg/png/webp` previewable; other common camera formats listed as unsupported for preview).
+- Asset status: `available` | `selected` | `used` | `hidden` (click / shift-click range; hide + “Show hidden”; drag to canvas → `used`).
+- On first use, owner picks a publication folder (readwrite). Studio **copies** (does not move) the original into that folder; no resize/compress/EXIF yet.
+- Canvas draft gets `StudioImage.assetId` + session blob preview URL; IndexedDB `media` store keeps handles/status (DB v2). No writes to `src/data/*` or Publish.

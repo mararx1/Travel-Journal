@@ -135,6 +135,20 @@ nav a:focus-visible {
   margin-left: 8px;
 }
 
+.studio-entry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  color: inherit;
+  line-height: 0;
+  border-bottom: none;
+}
+
+.studio-entry svg {
+  display: block;
+}
+
 .journal h1 {
   margin: 0;
   font-family: Georgia, 'Times New Roman', serif;

@@ -333,6 +333,17 @@ function Header({ route, navigate }: { route: Route; navigate: (route: Route) =>
         >
           {otherLocale.toUpperCase()}
         </a>
+        <a className="studio-entry" href="/studio" aria-label="Open Studio">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path
+              d="M8.6 2.4 11.6 5.4 5.2 11.8H2.2v-3L8.6 2.4Z"
+              stroke="currentColor"
+              strokeWidth="1.1"
+              strokeLinejoin="round"
+            />
+            <path d="M7.4 3.6 10.4 6.6" stroke="currentColor" strokeWidth="1.1" />
+          </svg>
+        </a>
       </nav>
     </header>
   )

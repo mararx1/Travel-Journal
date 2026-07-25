@@ -2,6 +2,8 @@ import type { LocalizedText } from '../i18n/types'
 
 export type StudioImage = {
   src: string
+  /** Library asset id when the image came from local import. */
+  assetId?: string
   alt?: LocalizedText
   caption?: LocalizedText
   orientation?: 'portrait' | 'landscape' | 'wide'

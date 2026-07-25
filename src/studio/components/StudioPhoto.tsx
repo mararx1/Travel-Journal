@@ -1,14 +1,18 @@
 import { SiteImage } from '../../components/SiteImage'
+import { useMediaLibrary } from '../MediaLibraryContext'
 import type { StudioImage } from '../types'
 
-export function StudioPhoto({
-  image,
-  eager = false,
-}: {
+type StudioPhotoProps = {
   image: StudioImage
   eager?: boolean
-}) {
-  if (image.placeholder || image.src.startsWith('placeholder:')) {
+}
+
+export function StudioPhoto({ image, eager }: StudioPhotoProps) {
+  const { resolvePreview } = useMediaLibrary()
+  const resolved =
+    (image.assetId ? resolvePreview(image.assetId) : undefined) ?? image.src
+
+  if (image.placeholder || resolved.startsWith('placeholder:') || resolved.startsWith('asset:')) {
     return (
       <div className="studio-photo-placeholder" aria-label="Empty photo slot">
         Photo
@@ -18,9 +22,10 @@ export function StudioPhoto({
 
   return (
     <SiteImage
-      src={image.src}
+      src={resolved}
       alt={image.alt?.en ?? ''}
       orientation={image.orientation}
+      mode="cover"
       eager={eager}
     />
   )

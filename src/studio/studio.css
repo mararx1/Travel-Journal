@@ -292,16 +292,143 @@
   font-weight: 400;
 }
 
+.studio-library-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.studio-btn-quiet {
+  justify-content: flex-start;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.studio-btn-quiet:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.studio-library-note {
+  margin-top: -4px;
+}
+
+.studio-library-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.studio-library-toolbar .studio-section-label {
+  margin: 0;
+}
+
+.studio-show-hidden {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--studio-muted);
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+}
+
 .studio-asset-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
+.studio-asset-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
 .studio-asset {
+  position: relative;
   aspect-ratio: 1;
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid var(--studio-border);
+  padding: 0;
+  overflow: hidden;
+  background: #f4f4f5;
+  cursor: pointer;
+}
+
+.studio-asset img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.studio-asset-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  color: var(--studio-muted);
+  font-size: 10px;
+  text-align: center;
+  word-break: break-word;
+}
+
+.studio-asset-badge {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--studio-muted);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.studio-asset-card.is-selected .studio-asset {
+  outline: 1px solid var(--studio-text);
+  outline-offset: 1px;
+}
+
+.studio-asset-card.is-used .studio-asset {
+  opacity: 0.85;
+}
+
+.studio-asset-card.is-hidden .studio-asset {
+  opacity: 0.45;
+}
+
+.studio-asset-card.is-unsupported .studio-asset {
+  cursor: default;
+}
+
+.studio-asset-hide {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--studio-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.studio-asset-hide:hover {
+  color: var(--studio-text);
+}
+
+.studio-add-control.is-asset-over .studio-add-block {
+  border-color: var(--studio-text);
+  color: var(--studio-text);
 }
 
 .studio-canvas-wrap {
