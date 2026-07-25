@@ -101,24 +101,20 @@ async function uniqueFileName(dir: FileSystemDirectoryHandle, name: string): Pro
   return `${base}-${Date.now()}${ext}`
 }
 
-/** Copy a source file into the publication directory (read source, write destination). */
-export async function copyFileToDirectory(
-  source: FileSystemFileHandle,
+/** Write a Blob into the publication directory (does not touch the source archive). */
+export async function writeBlobToDirectory(
   destinationDir: FileSystemDirectoryHandle,
-  preferredName?: string,
+  preferredName: string,
+  blob: Blob,
 ): Promise<string> {
-  const sourceOk = await ensurePermission(source, 'read')
-  if (!sourceOk) throw new Error('Source read permission denied')
-
   const destOk = await ensurePermission(destinationDir, 'readwrite')
   if (!destOk) throw new Error('Publication folder write permission denied')
 
-  const file = await source.getFile()
-  const name = await uniqueFileName(destinationDir, preferredName ?? file.name)
+  const name = await uniqueFileName(destinationDir, preferredName)
   const out = await destinationDir.getFileHandle(name, { create: true })
   const writable = await out.createWritable()
   try {
-    await writable.write(await file.arrayBuffer())
+    await writable.write(blob)
   } finally {
     await writable.close()
   }
@@ -130,4 +126,34 @@ export async function fileToObjectUrl(handle: FileSystemFileHandle): Promise<str
   if (!ok) throw new Error('File read permission denied')
   const file = await handle.getFile()
   return URL.createObjectURL(file)
+}
+
+export async function readSourceFile(handle: FileSystemFileHandle): Promise<File> {
+  const ok = await ensurePermission(handle, 'read')
+  if (!ok) throw new Error('Source read permission denied')
+  return handle.getFile()
+}
+
+export function canUseOpenFilePicker(): boolean {
+  return typeof window !== 'undefined' && typeof window.showOpenFilePicker === 'function'
+}
+
+export async function pickImageFile(): Promise<FileSystemFileHandle> {
+  if (!canUseOpenFilePicker()) {
+    throw new Error('File picker unavailable')
+  }
+  const [handle] = await window.showOpenFilePicker!({
+    multiple: false,
+    types: [
+      {
+        description: 'Images',
+        accept: {
+          'image/jpeg': ['.jpg', '.jpeg'],
+          'image/png': ['.png'],
+          'image/webp': ['.webp'],
+        },
+      },
+    ],
+  })
+  return handle
 }

@@ -10,12 +10,16 @@ import {
 } from 'react'
 import {
   canUseDirectoryPicker,
-  copyFileToDirectory,
+  canUseOpenFilePicker,
   fileToObjectUrl,
   listImageFiles,
   pickDirectory,
+  pickImageFile,
+  readSourceFile,
+  writeBlobToDirectory,
 } from './fs/fsAccess'
-import { ASSET_DRAG_MIME, type MediaAsset } from './media/types'
+import { derivativeFileName, measureAndDerive, readImageDimensions } from './media/deriveImage'
+import { ASSET_DRAG_MIME, type AssetStatus, type MediaAsset } from './media/types'
 import { loadMediaLibrary, saveMediaLibrary } from './persist/mediaStore'
 import { useStudioDraft } from './StudioDraftContext'
 import type { StudioBlock, StudioImage } from './types'
@@ -34,7 +38,10 @@ type MediaLibraryContextValue = {
   selectAsset: (id: string, options?: { shiftKey?: boolean; orderedIds?: string[] }) => void
   hideAsset: (id: string) => void
   unhideAsset: (id: string) => void
+  markAssetMissing: (id: string) => void
+  relinkAsset: (id: string) => Promise<void>
   resolvePreview: (assetId: string) => string | undefined
+  getAsset: (assetId: string) => MediaAsset | undefined
   applyAssetToSlot: (assetId: string, blockId: string, slotIndex: number) => Promise<void>
   applyAssetAsNewBlock: (assetId: string, insertBeforeIndex: number) => Promise<void>
 }
@@ -55,6 +62,8 @@ function imageFromAsset(asset: MediaAsset): StudioImage {
   return {
     src: asset.previewUrl ?? `asset:${asset.id}`,
     assetId: asset.id,
+    width: asset.width,
+    height: asset.height,
     placeholder: false,
     alt: { en: asset.name },
   }
@@ -62,25 +71,48 @@ function imageFromAsset(asset: MediaAsset): StudioImage {
 
 function patchBlockImage(block: StudioBlock, slotIndex: number, image: StudioImage): StudioBlock {
   if (block.type === 'image') {
-    return { ...block, image }
+    return { ...block, image: { ...block.image, ...image, caption: block.image.caption, alt: image.alt ?? block.image.alt } }
   }
   if (block.type === 'image-row') {
     const images: [StudioImage, StudioImage] = [...block.images]
     if (slotIndex < 0 || slotIndex > 1) return block
-    images[slotIndex] = image
+    const previous = images[slotIndex]
+    images[slotIndex] = {
+      ...previous,
+      ...image,
+      caption: previous.caption,
+      alt: image.alt ?? previous.alt,
+    }
     return { ...block, images }
   }
   if (block.type === 'image-triple') {
     const images: [StudioImage, StudioImage, StudioImage] = [...block.images]
     if (slotIndex < 0 || slotIndex > 2) return block
-    images[slotIndex] = image
+    const previous = images[slotIndex]
+    images[slotIndex] = {
+      ...previous,
+      ...image,
+      caption: previous.caption,
+      alt: image.alt ?? previous.alt,
+    }
     return { ...block, images }
   }
   return block
 }
 
+function toMissing(asset: MediaAsset): MediaAsset {
+  if (asset.status === 'missing') return asset
+  revokePreview(asset.previewUrl)
+  return {
+    ...asset,
+    previewUrl: undefined,
+    statusBeforeMissing: asset.status,
+    status: 'missing',
+  }
+}
+
 export function MediaLibraryProvider({ children }: { children: ReactNode }) {
-  const { updateBlock, insertImageBlock } = useStudioDraft()
+  const { draft, updateBlock, insertImageBlock } = useStudioDraft()
   const fsSupported = canUseDirectoryPicker()
 
   const [sourceFolderName, setSourceFolderName] = useState<string | null>(null)
@@ -101,12 +133,14 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
   const sourceDirHandleRef = useRef(sourceDirHandle)
   const sourceFolderNameRef = useRef(sourceFolderName)
   const publicationFolderNameRef = useRef(publicationFolderName)
+  const draftRef = useRef(draft)
 
   assetsRef.current = assets
   publicationDirHandleRef.current = publicationDirHandle
   sourceDirHandleRef.current = sourceDirHandle
   sourceFolderNameRef.current = sourceFolderName
   publicationFolderNameRef.current = publicationFolderName
+  draftRef.current = draft
 
   const persistNow = useCallback(
     (
@@ -133,6 +167,21 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const commitAssets = useCallback(
+    (next: MediaAsset[]) => {
+      assetsRef.current = next
+      setAssets(next)
+      persistNow(
+        next,
+        sourceFolderNameRef.current,
+        publicationFolderNameRef.current,
+        sourceDirHandleRef.current,
+        publicationDirHandleRef.current,
+      )
+    },
+    [persistNow],
+  )
+
   useEffect(() => {
     if (!fsSupported) return
 
@@ -150,17 +199,40 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
 
         const hydrated: MediaAsset[] = []
         for (const item of stored.assets) {
-          let previewUrl: string | undefined
-          if (item.previewable) {
-            try {
-              previewUrl = await fileToObjectUrl(item.sourceHandle)
-            } catch {
-              previewUrl = undefined
-            }
+          if (!item.previewable) {
+            hydrated.push({ ...item, previewUrl: undefined })
+            continue
           }
-          hydrated.push({ ...item, previewUrl })
+          try {
+            const previewUrl = await fileToObjectUrl(item.sourceHandle)
+            let width = item.width
+            let height = item.height
+            if (width === undefined || height === undefined) {
+              try {
+                const file = await readSourceFile(item.sourceHandle)
+                const dims = await readImageDimensions(file)
+                width = dims.width
+                height = dims.height
+              } catch {
+                // keep existing
+              }
+            }
+            hydrated.push({
+              ...item,
+              width,
+              height,
+              previewUrl,
+              status: item.status === 'missing' ? (item.statusBeforeMissing ?? 'available') : item.status,
+              statusBeforeMissing: undefined,
+            })
+          } catch {
+            hydrated.push(toMissing({ ...item, previewUrl: undefined }))
+          }
         }
-        if (!cancelled) setAssets(hydrated)
+        if (!cancelled) {
+          setAssets(hydrated)
+          assetsRef.current = hydrated
+        }
       } catch {
         if (!cancelled) setNote('Could not restore the media library.')
       }
@@ -191,11 +263,16 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
       for (const file of listed) {
         let previewUrl: string | undefined
         let mimeType = 'application/octet-stream'
+        let width: number | undefined
+        let height: number | undefined
         if (file.previewable) {
           try {
+            const sourceFile = await readSourceFile(file.handle)
+            mimeType = sourceFile.type || mimeType
+            const dims = await readImageDimensions(sourceFile)
+            width = dims.width
+            height = dims.height
             previewUrl = await fileToObjectUrl(file.handle)
-            const f = await file.handle.getFile()
-            mimeType = f.type || mimeType
           } catch {
             previewUrl = undefined
           }
@@ -205,22 +282,19 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
           name: file.name,
           mimeType,
           previewable: file.previewable,
-          status: 'available',
+          status: previewUrl || !file.previewable ? 'available' : 'missing',
           sourceHandle: file.handle,
+          width,
+          height,
           previewUrl,
         })
       }
 
       setSourceDirHandle(dir)
       setSourceFolderName(dir.name)
-      setAssets(next)
-      persistNow(
-        next,
-        dir.name,
-        publicationFolderNameRef.current,
-        dir,
-        publicationDirHandleRef.current,
-      )
+      sourceDirHandleRef.current = dir
+      sourceFolderNameRef.current = dir.name
+      commitAssets(next)
       setNote(
         next.length === 0
           ? 'No image files found in that folder.'
@@ -232,7 +306,7 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
     } finally {
       setBusy(false)
     }
-  }, [fsSupported, persistNow])
+  }, [commitAssets, fsSupported])
 
   const choosePublicationFolder = useCallback(async () => {
     if (!fsSupported) return false
@@ -242,6 +316,8 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
       const dir = await pickDirectory('readwrite')
       setPublicationDirHandle(dir)
       setPublicationFolderName(dir.name)
+      publicationDirHandleRef.current = dir
+      publicationFolderNameRef.current = dir.name
       persistNow(
         assetsRef.current,
         sourceFolderNameRef.current,
@@ -291,103 +367,114 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
 
   const selectAsset = useCallback(
     (id: string, options?: { shiftKey?: boolean; orderedIds?: string[] }) => {
-      setAssets((current) => {
-        const order = options?.orderedIds ?? current.map((asset) => asset.id)
-        const index = order.indexOf(id)
-        if (index < 0) return current
+      const current = assetsRef.current
+      const order = options?.orderedIds ?? current.map((asset) => asset.id)
+      const index = order.indexOf(id)
+      if (index < 0) return
 
-        if (options?.shiftKey && lastSelectedIndexRef.current !== null) {
-          const from = Math.min(lastSelectedIndexRef.current, index)
-          const to = Math.max(lastSelectedIndexRef.current, index)
-          const inRange = new Set(order.slice(from, to + 1))
-          const next = current.map((asset) => {
+      if (options?.shiftKey && lastSelectedIndexRef.current !== null) {
+        const from = Math.min(lastSelectedIndexRef.current, index)
+        const to = Math.max(lastSelectedIndexRef.current, index)
+        const inRange = new Set(order.slice(from, to + 1))
+        commitAssets(
+          current.map((asset) => {
             if (!inRange.has(asset.id)) return asset
-            if (asset.status === 'hidden' || asset.status === 'used') return asset
+            if (asset.status === 'hidden' || asset.status === 'used' || asset.status === 'missing') {
+              return asset
+            }
             return { ...asset, status: 'selected' as const }
-          })
-          persistNow(
-            next,
-            sourceFolderNameRef.current,
-            publicationFolderNameRef.current,
-            sourceDirHandleRef.current,
-            publicationDirHandleRef.current,
-          )
-          return next
-        }
+          }),
+        )
+        return
+      }
 
-        lastSelectedIndexRef.current = index
-        const next = current.map((asset) => {
+      lastSelectedIndexRef.current = index
+      commitAssets(
+        current.map((asset) => {
           if (asset.id === id) {
-            if (asset.status === 'hidden' || asset.status === 'used') return asset
+            if (asset.status === 'hidden' || asset.status === 'used' || asset.status === 'missing') {
+              return asset
+            }
             return { ...asset, status: 'selected' as const }
           }
           if (asset.status === 'selected') return { ...asset, status: 'available' as const }
           return asset
-        })
-        persistNow(
-          next,
-          sourceFolderNameRef.current,
-          publicationFolderNameRef.current,
-          sourceDirHandleRef.current,
-          publicationDirHandleRef.current,
-        )
-        return next
-      })
+        }),
+      )
     },
-    [persistNow],
+    [commitAssets],
   )
 
   const hideAsset = useCallback(
     (id: string) => {
-      setAssets((current) => {
-        const next = current.map((asset) =>
-          asset.id === id ? { ...asset, status: 'hidden' as const } : asset,
-        )
-        persistNow(
-          next,
-          sourceFolderNameRef.current,
-          publicationFolderNameRef.current,
-          sourceDirHandleRef.current,
-          publicationDirHandleRef.current,
-        )
-        return next
-      })
+      const next = assetsRef.current.map((asset) =>
+        asset.id === id && asset.status !== 'missing'
+          ? { ...asset, status: 'hidden' as const }
+          : asset,
+      )
+      commitAssets(next)
     },
-    [persistNow],
+    [commitAssets],
   )
 
   const unhideAsset = useCallback(
     (id: string) => {
-      setAssets((current) => {
-        const next = current.map((asset) => {
-          if (asset.id !== id) return asset
-          return {
-            ...asset,
-            status: asset.publishedName ? ('used' as const) : ('available' as const),
-          }
-        })
-        persistNow(
-          next,
-          sourceFolderNameRef.current,
-          publicationFolderNameRef.current,
-          sourceDirHandleRef.current,
-          publicationDirHandleRef.current,
-        )
-        return next
+      const next = assetsRef.current.map((asset) => {
+        if (asset.id !== id) return asset
+        if (asset.status === 'missing') return asset
+        return {
+          ...asset,
+          status: (asset.publishedName ? 'used' : 'available') as AssetStatus,
+        }
       })
+      commitAssets(next)
     },
-    [persistNow],
+    [commitAssets],
+  )
+
+  const markAssetMissing = useCallback(
+    (id: string) => {
+      const next = assetsRef.current.map((asset) =>
+        asset.id === id ? toMissing(asset) : asset,
+      )
+      commitAssets(next)
+    },
+    [commitAssets],
   )
 
   const resolvePreview = useCallback(
-    (assetId: string) => assets.find((asset) => asset.id === assetId)?.previewUrl,
+    (assetId: string) => {
+      const asset = assets.find((item) => item.id === assetId)
+      if (!asset || asset.status === 'missing') return undefined
+      return asset.previewUrl
+    },
     [assets],
+  )
+
+  const getAsset = useCallback(
+    (assetId: string) => assets.find((item) => item.id === assetId),
+    [assets],
+  )
+
+  const writeDerivative = useCallback(
+    async (asset: MediaAsset, pubDir: FileSystemDirectoryHandle) => {
+      const file = await readSourceFile(asset.sourceHandle)
+      const derived = await measureAndDerive(file)
+      const preferred = derivativeFileName(asset.name, derived.extension)
+      const publishedName = await writeBlobToDirectory(pubDir, preferred, derived.blob)
+      return { derived, publishedName }
+    },
+    [],
   )
 
   const prepareUsedAsset = useCallback(
     async (assetId: string): Promise<MediaAsset | null> => {
       const asset = assetsRef.current.find((item) => item.id === assetId)
       if (!asset) return null
+      if (asset.status === 'missing') {
+        setNote('That file is missing. Re-link it before placing on the canvas.')
+        return null
+      }
       if (!asset.previewable) {
         setNote('That format can’t be previewed or placed on the canvas yet.')
         return null
@@ -398,38 +485,59 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
 
       setBusy(true)
       try {
-        const publishedName =
-          asset.publishedName
-          ?? (await copyFileToDirectory(asset.sourceHandle, pubDir, asset.name))
+        let publishedName = asset.publishedName
+        let width = asset.width
+        let height = asset.height
+
+        if (!publishedName) {
+          const { derived, publishedName: written } = await writeDerivative(asset, pubDir)
+          publishedName = written
+          width = derived.width
+          height = derived.height
+        } else if (width === undefined || height === undefined) {
+          const file = await readSourceFile(asset.sourceHandle)
+          const dims = await readImageDimensions(file)
+          width = dims.width
+          height = dims.height
+        }
 
         const updated: MediaAsset = {
           ...asset,
           status: 'used',
           publishedName,
+          width,
+          height,
+          statusBeforeMissing: undefined,
         }
 
-        setAssets((current) => {
-          const next = current.map((item) => (item.id === assetId ? updated : item))
-          assetsRef.current = next
-          persistNow(
-            next,
-            sourceFolderNameRef.current,
-            publicationFolderNameRef.current ?? pubDir.name,
-            sourceDirHandleRef.current,
-            pubDir,
-          )
-          return next
-        })
+        commitAssets(
+          assetsRef.current.map((item) => (item.id === assetId ? updated : item)),
+        )
 
         return updated
       } catch {
-        setNote('Could not copy the file into the publication folder.')
+        const current = assetsRef.current.find((item) => item.id === assetId)
+        if (current) {
+          try {
+            await readSourceFile(current.sourceHandle)
+            setNote('Could not write the web derivative into the publication folder.')
+          } catch {
+            commitAssets(
+              assetsRef.current.map((item) =>
+                item.id === assetId ? toMissing(item) : item,
+              ),
+            )
+            setNote('Source file is missing. Re-link it from the library.')
+          }
+        } else {
+          setNote('Could not prepare that photograph.')
+        }
         return null
       } finally {
         setBusy(false)
       }
     },
-    [ensurePublicationFolder, persistNow],
+    [commitAssets, ensurePublicationFolder, writeDerivative],
   )
 
   const applyAssetToSlot = useCallback(
@@ -450,6 +558,98 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
     [insertImageBlock, prepareUsedAsset],
   )
 
+  const relinkAsset = useCallback(
+    async (id: string) => {
+      if (!canUseOpenFilePicker()) {
+        setNote('File re-link isn’t available in this browser.')
+        return
+      }
+      setBusy(true)
+      setNote(null)
+      try {
+        const handle = await pickImageFile()
+        const file = await readSourceFile(handle)
+        const dims = await readImageDimensions(file)
+        const previewUrl = URL.createObjectURL(file)
+        const previous = assetsRef.current.find((asset) => asset.id === id)
+        if (!previous) return
+
+        revokePreview(previous.previewUrl)
+
+        const restoredStatus: AssetStatus =
+          previous.statusBeforeMissing
+          ?? (previous.publishedName ? 'used' : 'available')
+
+        let publishedName = previous.publishedName
+        const pubDir = publicationDirHandleRef.current
+
+        if (restoredStatus === 'used' || previous.publishedName) {
+          if (!pubDir) {
+            setNote('Set a publication folder, then re-link again to refresh the derivative.')
+          } else {
+            const derived = await measureAndDerive(file)
+            publishedName = await writeBlobToDirectory(
+              pubDir,
+              derivativeFileName(handle.name, derived.extension),
+              derived.blob,
+            )
+          }
+        }
+
+        const updated: MediaAsset = {
+          ...previous,
+          name: handle.name,
+          mimeType: file.type || previous.mimeType,
+          previewable: true,
+          sourceHandle: handle,
+          width: dims.width,
+          height: dims.height,
+          previewUrl,
+          publishedName,
+          status: publishedName ? 'used' : restoredStatus === 'used' ? 'available' : restoredStatus,
+          statusBeforeMissing: undefined,
+        }
+
+        if (updated.status === 'hidden' && !previous.publishedName) {
+          updated.status = 'available'
+        }
+
+        commitAssets(
+          assetsRef.current.map((asset) => (asset.id === id ? updated : asset)),
+        )
+
+        const image = imageFromAsset(updated)
+        for (const block of draftRef.current.blocks) {
+          if (block.type === 'image' && block.image.assetId === id) {
+            updateBlock(block.id, (current) => patchBlockImage(current, 0, image))
+          }
+          if (block.type === 'image-row') {
+            block.images.forEach((slot, index) => {
+              if (slot.assetId === id) {
+                updateBlock(block.id, (current) => patchBlockImage(current, index, image))
+              }
+            })
+          }
+          if (block.type === 'image-triple') {
+            block.images.forEach((slot, index) => {
+              if (slot.assetId === id) {
+                updateBlock(block.id, (current) => patchBlockImage(current, index, image))
+              }
+            })
+          }
+        }
+
+        setNote(`Re-linked ${handle.name}.`)
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setNote('Could not re-link that file.')
+      } finally {
+        setBusy(false)
+      }
+    },
+    [commitAssets, updateBlock],
+  )
+
   const value = useMemo(
     () => ({
       fsSupported,
@@ -465,7 +665,10 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
       selectAsset,
       hideAsset,
       unhideAsset,
+      markAssetMissing,
+      relinkAsset,
       resolvePreview,
+      getAsset,
       applyAssetToSlot,
       applyAssetAsNewBlock,
     }),
@@ -482,7 +685,10 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
       selectAsset,
       hideAsset,
       unhideAsset,
+      markAssetMissing,
+      relinkAsset,
       resolvePreview,
+      getAsset,
       applyAssetToSlot,
       applyAssetAsNewBlock,
     ],

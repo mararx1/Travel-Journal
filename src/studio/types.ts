@@ -4,6 +4,9 @@ export type StudioImage = {
   src: string
   /** Library asset id when the image came from local import. */
   assetId?: string
+  /** Intrinsic source pixel size (captured at import / use). */
+  width?: number
+  height?: number
   alt?: LocalizedText
   caption?: LocalizedText
   orientation?: 'portrait' | 'landscape' | 'wide'

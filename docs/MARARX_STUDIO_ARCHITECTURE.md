@@ -139,3 +139,9 @@ Each block keeps its existing in-memory shape: `type`, layout presets (`size` / 
 - Asset status: `available` | `selected` | `used` | `hidden` (click / shift-click range; hide + “Show hidden”; drag to canvas → `used`).
 - On first use, owner picks a publication folder (readwrite). Studio **copies** (does not move) the original into that folder; no resize/compress/EXIF yet.
 - Canvas draft gets `StudioImage.assetId` + session blob preview URL; IndexedDB `media` store keeps handles/status (DB v2). No writes to `src/data/*` or Publish.
+
+### Phase 4 slice 2 — Derivatives, dimensions, missing files
+
+- On first transition to `used`, Studio writes a **web derivative** (canvas resize, long edge ≤ 1800px, WebP or JPEG ~0.82) into the publication folder; source archive stays untouched (no original copy into pub).
+- Intrinsic `width` / `height` captured on `MediaAsset` and `StudioImage` (Inspector shows `W × H` for photo blocks). Not yet consumed by public `SiteImage`.
+- Asset status may be `missing` when the source handle fails; Library/Canvas show a muted broken placeholder; **Re-link** picks a new file and preserves block captions/layout (and refreshes the derivative when the asset was used).

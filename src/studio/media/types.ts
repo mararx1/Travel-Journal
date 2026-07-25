@@ -1,4 +1,4 @@
-export type AssetStatus = 'available' | 'selected' | 'used' | 'hidden'
+export type AssetStatus = 'available' | 'selected' | 'used' | 'hidden' | 'missing'
 
 export type MediaAsset = {
   id: string
@@ -7,8 +7,13 @@ export type MediaAsset = {
   previewable: boolean
   status: AssetStatus
   sourceHandle: FileSystemFileHandle
-  /** Filename written into the publication folder when used. */
+  /** Intrinsic pixel size of the source image. */
+  width?: number
+  height?: number
+  /** Filename written into the publication folder when used (web derivative). */
   publishedName?: string
+  /** Lifecycle status before the file went missing (for restore on re-link). */
+  statusBeforeMissing?: Exclude<AssetStatus, 'missing'>
   /** Session object URL for grid / canvas preview. */
   previewUrl?: string
 }

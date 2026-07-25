@@ -9,7 +9,10 @@ export type PersistedMediaAsset = {
   mimeType: string
   previewable: boolean
   status: AssetStatus
+  width?: number
+  height?: number
   publishedName?: string
+  statusBeforeMissing?: Exclude<AssetStatus, 'missing'>
   sourceHandle: FileSystemFileHandle
 }
 

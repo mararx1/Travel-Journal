@@ -412,6 +412,57 @@
   cursor: default;
 }
 
+.studio-asset-card.is-missing .studio-asset {
+  cursor: default;
+}
+
+.studio-asset-missing,
+.studio-photo-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-height: 140px;
+  padding: 8px;
+  background: #f4f4f5;
+  color: var(--studio-muted);
+  text-align: center;
+}
+
+.studio-asset-missing {
+  min-height: 0;
+  aspect-ratio: 1;
+}
+
+.studio-missing-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.studio-missing-name {
+  font-size: 10px;
+  word-break: break-word;
+}
+
+.studio-image-meta {
+  margin: -4px 0 12px;
+  font-size: 11px;
+}
+
+.studio-row-media .studio-photo-missing {
+  aspect-ratio: 3 / 2;
+}
+
 .studio-asset-hide {
   align-self: flex-start;
   padding: 0;

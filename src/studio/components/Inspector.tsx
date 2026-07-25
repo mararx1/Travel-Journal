@@ -168,6 +168,11 @@ function BlockInspector({
       <>
         <div className="studio-panel-scroll">
           <h2 className="studio-inspector-title">Photo</h2>
+          {block.image.width && block.image.height ? (
+            <p className="studio-muted studio-image-meta">
+              {block.image.width} × {block.image.height}
+            </p>
+          ) : null}
           <label className="studio-field">
             <span>Layout preset</span>
             <select

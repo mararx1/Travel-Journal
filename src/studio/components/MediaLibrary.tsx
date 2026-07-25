@@ -10,6 +10,7 @@ const mockFolders = [
 ]
 
 function statusLabel(asset: MediaAsset): string | null {
+  if (asset.status === 'missing') return 'Missing'
   if (asset.status === 'used') return 'Used'
   if (asset.status === 'selected') return 'Selected'
   if (asset.status === 'hidden') return 'Hidden'
@@ -31,6 +32,8 @@ export function MediaLibrary() {
     selectAsset,
     hideAsset,
     unhideAsset,
+    markAssetMissing,
+    relinkAsset,
   } = useMediaLibrary()
 
   const visibleAssets = assets.filter((asset) => showHidden || asset.status !== 'hidden')
@@ -38,7 +41,7 @@ export function MediaLibrary() {
   const hiddenCount = assets.filter((asset) => asset.status === 'hidden').length
 
   function onAssetDragStart(event: DragEvent<HTMLButtonElement>, asset: MediaAsset) {
-    if (!asset.previewable) {
+    if (!asset.previewable || asset.status === 'missing') {
       event.preventDefault()
       return
     }
@@ -134,6 +137,7 @@ export function MediaLibrary() {
               <div className="studio-asset-grid">
                 {visibleAssets.map((asset) => {
                   const label = statusLabel(asset)
+                  const missing = asset.status === 'missing'
                   return (
                     <div
                       key={asset.id}
@@ -142,6 +146,7 @@ export function MediaLibrary() {
                         asset.status === 'selected' ? 'is-selected' : '',
                         asset.status === 'used' ? 'is-used' : '',
                         asset.status === 'hidden' ? 'is-hidden' : '',
+                        missing ? 'is-missing' : '',
                         !asset.previewable ? 'is-unsupported' : '',
                       ]
                         .filter(Boolean)
@@ -150,8 +155,12 @@ export function MediaLibrary() {
                       <button
                         type="button"
                         className="studio-asset"
-                        draggable={asset.previewable}
-                        title={asset.name}
+                        draggable={asset.previewable && !missing}
+                        title={
+                          asset.width && asset.height
+                            ? `${asset.name} · ${asset.width}×${asset.height}`
+                            : asset.name
+                        }
                         onClick={(event) => {
                           selectAsset(asset.id, {
                             shiftKey: event.shiftKey,
@@ -160,17 +169,38 @@ export function MediaLibrary() {
                         }}
                         onDragStart={(event) => onAssetDragStart(event, asset)}
                       >
-                        {asset.previewable && asset.previewUrl ? (
-                          <img src={asset.previewUrl} alt="" draggable={false} />
+                        {missing ? (
+                          <span className="studio-asset-missing">
+                            <span className="studio-missing-glyph" aria-hidden="true">
+                              !
+                            </span>
+                            <span className="studio-missing-name">{asset.name}</span>
+                          </span>
+                        ) : asset.previewable && asset.previewUrl ? (
+                          <img
+                            src={asset.previewUrl}
+                            alt=""
+                            draggable={false}
+                            onError={() => markAssetMissing(asset.id)}
+                          />
                         ) : (
                           <span className="studio-asset-fallback">{asset.name}</span>
                         )}
                         {label && <span className="studio-asset-badge">{label}</span>}
-                        {!asset.previewable && (
+                        {!asset.previewable && !missing && (
                           <span className="studio-asset-badge">Unsupported preview</span>
                         )}
                       </button>
-                      {asset.status === 'hidden' ? (
+                      {missing ? (
+                        <button
+                          type="button"
+                          className="studio-asset-hide"
+                          disabled={busy}
+                          onClick={() => void relinkAsset(asset.id)}
+                        >
+                          Re-link
+                        </button>
+                      ) : asset.status === 'hidden' ? (
                         <button
                           type="button"
                           className="studio-asset-hide"
