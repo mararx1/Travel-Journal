@@ -1,18 +1,33 @@
 import { useMemo, useState } from 'react'
+import { applyToSite, type ApplyStatus } from '../generate/applyToSite'
 import { generateStoryContent } from '../generate/generateStoryContent'
 import { writeGeneratedOutput } from '../generate/writeGeneratedOutput'
 import { useMediaLibrary } from '../MediaLibraryContext'
 import { useStudioDraft } from '../StudioDraftContext'
 
+function applyStatusLabel(status: ApplyStatus): string | null {
+  switch (status.phase) {
+    case 'applying':
+    case 'build-passed':
+    case 'build-failed':
+    case 'error':
+      return status.message
+    default:
+      return null
+  }
+}
+
 export function GeneratePanel() {
-  const { draft } = useStudioDraft()
+  const { draft, markSiteReady } = useStudioDraft()
   const { assets } = useMediaLibrary()
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [resultNote, setResultNote] = useState<string | null>(null)
+  const [applyStatus, setApplyStatus] = useState<ApplyStatus>({ phase: 'idle' })
 
   const preview = useMemo(() => generateStoryContent(draft, assets), [draft, assets])
   const warningCount = preview.warnings.length
+  const applyLabel = applyStatusLabel(applyStatus)
 
   async function handleGenerate() {
     setBusy(true)
@@ -37,6 +52,34 @@ export function GeneratePanel() {
     }
   }
 
+  async function handleApply() {
+    setBusy(true)
+    setResultNote(null)
+    setOpen(true)
+    try {
+      const result = await applyToSite(draft, assets, setApplyStatus)
+      if (!result.ok) {
+        if (result.cancelled) {
+          setApplyStatus({ phase: 'idle' })
+          setResultNote(null)
+          return
+        }
+        setResultNote(result.error)
+        return
+      }
+      markSiteReady()
+      setResultNote(`Applied “${result.slug}” (${result.written.length} path(s)). Build passed.`)
+    } catch (error) {
+      setApplyStatus({
+        phase: 'error',
+        message: error instanceof Error ? error.message : 'Apply failed',
+      })
+      setResultNote(error instanceof Error ? error.message : 'Apply failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="studio-generate-panel">
       <button
@@ -45,7 +88,7 @@ export function GeneratePanel() {
         disabled={busy}
         onClick={() => void handleGenerate()}
       >
-        {busy ? 'Generating…' : 'Generate'}
+        {busy && applyStatus.phase === 'idle' ? 'Generating…' : 'Generate'}
       </button>
       <button
         type="button"
@@ -55,6 +98,28 @@ export function GeneratePanel() {
       >
         {warningCount === 0 ? 'Validation' : `Validation (${warningCount})`}
       </button>
+      <button
+        type="button"
+        className="studio-btn"
+        disabled={busy}
+        onClick={() => void handleApply()}
+      >
+        {applyStatus.phase === 'applying' ? 'Applying…' : 'Apply to site'}
+      </button>
+      {applyLabel && (
+        <span
+          className={`studio-apply-status${
+            applyStatus.phase === 'build-failed' || applyStatus.phase === 'error'
+              ? ' is-error'
+              : applyStatus.phase === 'build-passed'
+                ? ' is-ok'
+                : ''
+          }`}
+          aria-live="polite"
+        >
+          {applyLabel}
+        </span>
+      )}
       <button type="button" className="studio-btn studio-btn-primary" disabled>
         Publish
       </button>
@@ -77,7 +142,7 @@ export function GeneratePanel() {
             </ul>
           )}
           <p className="studio-muted studio-generate-hint">
-            Warnings do not block Generate or draft save.
+            Warnings do not block Generate or draft save. Apply asks for confirmation when blocking issues remain.
           </p>
         </div>
       )}

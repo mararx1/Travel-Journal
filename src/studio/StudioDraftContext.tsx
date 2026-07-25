@@ -19,6 +19,9 @@ export type PreviewViewport = 'desktop' | 'mobile'
 
 export type SaveStatus = 'loading' | 'saving' | 'saved' | 'unsaved' | 'unavailable'
 
+/** Local site-integration state (not deployed). Ready = Apply + build succeeded. */
+export type SiteStatus = 'draft' | 'ready'
+
 type StudioDraftContextValue = {
   draft: StudioDraft
   selectedBlockId: string | null
@@ -26,10 +29,12 @@ type StudioDraftContextValue = {
   previewLocale: Locale
   previewViewport: PreviewViewport
   saveStatus: SaveStatus
+  siteStatus: SiteStatus
   ready: boolean
   selectBlock: (id: string | null) => void
   setPreviewLocale: (locale: Locale) => void
   setPreviewViewport: (viewport: PreviewViewport) => void
+  markSiteReady: () => void
   updateBlock: (id: string, updater: (block: StudioBlock) => StudioBlock) => void
   reorderBlocks: (fromIndex: number, insertBeforeIndex: number) => void
   reorderRowImages: (blockId: string, fromIndex: number, insertBeforeIndex: number) => void
@@ -48,11 +53,13 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
   const [previewLocale, setPreviewLocale] = useState<Locale>('en')
   const [previewViewport, setPreviewViewport] = useState<PreviewViewport>('desktop')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('loading')
+  const [siteStatus, setSiteStatus] = useState<SiteStatus>('draft')
   const [ready, setReady] = useState(false)
 
   const persistEnabledRef = useRef(true)
   const skipNextPersistRef = useRef(true)
   const saveTimerRef = useRef<number | null>(null)
+  const readyFingerprintRef = useRef<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -84,6 +91,16 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (siteStatus === 'ready' && readyFingerprintRef.current !== null) {
+      const fingerprint = JSON.stringify(draft)
+      if (fingerprint !== readyFingerprintRef.current) {
+        setSiteStatus('draft')
+        readyFingerprintRef.current = null
+      }
+    }
+  }, [draft, siteStatus])
 
   useEffect(() => {
     if (!ready || !persistEnabledRef.current) return
@@ -126,6 +143,11 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
   const selectBlock = useCallback((id: string | null) => {
     setSelectedBlockId(id)
   }, [])
+
+  const markSiteReady = useCallback(() => {
+    readyFingerprintRef.current = JSON.stringify(draft)
+    setSiteStatus('ready')
+  }, [draft])
 
   const updateBlock = useCallback((id: string, updater: (block: StudioBlock) => StudioBlock) => {
     setDraft((current) => ({
@@ -239,10 +261,12 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
       previewLocale,
       previewViewport,
       saveStatus,
+      siteStatus,
       ready,
       selectBlock,
       setPreviewLocale,
       setPreviewViewport,
+      markSiteReady,
       updateBlock,
       reorderBlocks,
       reorderRowImages,
@@ -257,8 +281,10 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
       previewLocale,
       previewViewport,
       saveStatus,
+      siteStatus,
       ready,
       selectBlock,
+      markSiteReady,
       updateBlock,
       reorderBlocks,
       reorderRowImages,

@@ -224,6 +224,28 @@
   font-size: 11px;
 }
 
+.studio-pill.is-ready {
+  background: #ecfccb;
+  color: #3f6212;
+}
+
+.studio-apply-status {
+  max-width: 120px;
+  color: var(--studio-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-apply-status.is-ok {
+  color: #3f6212;
+}
+
+.studio-apply-status.is-error {
+  color: #991b1b;
+}
+
 .studio-save {
   color: var(--studio-muted);
   font-size: 11px;

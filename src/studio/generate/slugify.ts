@@ -1,5 +1,6 @@
 import { appliedStoryContentBySlug, appliedStoryPreviews } from '../../data/applied-stories'
 import { storyPreviews } from '../../data/stories'
+import { storyContentBySlug } from '../../data/story-details'
 
 /** Basic Cyrillic → Latin map for URL-safe slugs (EN/RU site). */
 const CYRILLIC_TO_LATIN: Record<string, string> = {
@@ -58,6 +59,12 @@ function reservedStorySlugs(): Set<string> {
   }
 
   for (const slug of Object.keys(appliedStoryContentBySlug)) {
+    reserved.add(slug)
+  }
+
+  // Live StoryPage keys (hand-authored + applied), so content routes stay reserved
+  // even if a preview row is filtered out by the applied-id merge.
+  for (const slug of Object.keys(storyContentBySlug)) {
     reserved.add(slug)
   }
 

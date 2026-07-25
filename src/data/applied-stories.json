@@ -1,3 +1,33 @@
 {
-  "stories": {}
+  "stories": {
+    "qa-apply-story": {
+      "preview": {
+        "id": "qa-apply-story",
+        "coverImage": "/images/stories/qa-apply-cover.jpg",
+        "coverAlt": {
+          "en": "Cover"
+        },
+        "title": {
+          "en": "QA Apply Story Updated"
+        },
+        "location": {
+          "en": "Georgia"
+        },
+        "date": "2026-07-01",
+        "description": {
+          "en": "With image copy"
+        },
+        "photoCount": 1,
+        "route": "/stories/qa-apply-story"
+      },
+      "blocks": [
+        {
+          "type": "text",
+          "content": {
+            "en": "Final"
+          }
+        }
+      ]
+    }
+  }
 }

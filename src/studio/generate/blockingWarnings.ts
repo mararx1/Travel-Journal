@@ -1,6 +1,6 @@
 import type { DraftWarning } from './validateDraft'
 
-const BLOCKING_IDS = new Set(['title', 'cover'])
+const BLOCKING_IDS = new Set(['title', 'cover', 'slug-collision'])
 
 /** Issues that require explicit confirmation before Apply to site. */
 export function getBlockingWarnings(warnings: DraftWarning[]): DraftWarning[] {

@@ -27,6 +27,7 @@ export function TopBar({ onExit }: TopBarProps) {
     previewLocale,
     previewViewport,
     saveStatus,
+    siteStatus,
     setPreviewLocale,
     setPreviewViewport,
   } = useStudioDraft()
@@ -50,7 +51,9 @@ export function TopBar({ onExit }: TopBarProps) {
 
       <div className="studio-topbar-center">
         <h1 className="studio-title">{draft.title}</h1>
-        <span className="studio-pill">Draft</span>
+        <span className={`studio-pill${siteStatus === 'ready' ? ' is-ready' : ''}`}>
+          {siteStatus === 'ready' ? 'Ready' : 'Draft'}
+        </span>
         <span className="studio-save" aria-live="polite">
           {saveStatusLabel(saveStatus)}
         </span>
