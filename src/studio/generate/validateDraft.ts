@@ -1,6 +1,7 @@
 import type { MediaAsset } from '../media/types'
 import type { LocalizedText } from '../../i18n/types'
 import type { StudioBlock, StudioDraft, StudioImage } from '../types'
+import { resolveStorySlug } from './slugify'
 
 export type DraftWarning = {
   id: string
@@ -73,6 +74,14 @@ export function validateDraft(
 
   if (!hasText(draft.intro)) {
     warnings.push({ id: 'description', message: 'Missing description / intro' })
+  }
+
+  const slugResult = resolveStorySlug(draft.title)
+  if (slugResult.collisionAdjusted) {
+    warnings.push({
+      id: 'slug-collision',
+      message: `Slug adjusted to “${slugResult.slug}” to avoid collision with an existing story`,
+    })
   }
 
   for (const block of draft.blocks) {
