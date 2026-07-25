@@ -87,3 +87,76 @@ _Method: `npm run build`; `npm run dev` at `http://127.0.0.1:5173/studio`; brows
 - **Story title is EN-only on the draft shell** — Validation therefore always warns about missing Russian for the story title until story-level RU fields exist; that warning is expected with the current draft model.
 - **`image-triple` is not a public Story block type** — Generator expands it to single images and warns; expected until a public triple layout exists.
 - **Single working-draft IndexedDB document** — No multi-draft manager UI (by design for Phase 3).
+
+---
+
+## Round 2 — Edge Cases and Stress Testing
+
+_Date: 25 July 2026_  
+_Method: browser/CDP exercise on `/studio` plus code inspection where OS pickers, large binaries, or unfinished Apply flow blocked end-to-end._
+
+### Empty / degenerate states
+
+| Item | Result |
+| --- | --- |
+| Brand-new Story with zero blocks — Canvas/Inspector/Generate | **PASS** — Deleted down to 0 blocks; Studio stayed mounted; Inspector placeholder shown; Generate ran and wrote `docs/studio-output/` with warnings (“Missing title”, “Missing cover image”), no crash. |
+| Only text blocks, no images | **PASS** — 3 text/caption blocks; Generate succeeded; validation flagged missing cover (and empty texts); no crash. |
+| Image block still placeholder — Generate behavior | **PASS** — Added Photo with `.studio-photo-placeholder`; Generate warned “Unused or empty image slot in the story” / missing cover; did not crash; output omit empty slots (generator skips null images). |
+| Delete every block down to zero | **PASS** — Sequential Delete block → 0 blocks; Inspector placeholder; Studio alive. |
+
+### Undo/redo
+
+| Item | Result |
+| --- | --- |
+| Top-bar undo/redo arrows wired? | **PASS** — **Not present in the current shell** (top bar buttons: EN/RU, Desktop/Mobile, Generate, Validation, Publish). No undo/redo handlers under `src/studio/`. Reference-shell arrows are not implemented; add/delete/reorder/edit cannot be undone. |
+
+### Concurrent / rapid interaction
+
+| Item | Result |
+| --- | --- |
+| Rapid-fire add multiple blocks — duplicate IDs / corruption | **PASS** — 12 Text blocks added in ~2s; 12 unique `data-block-id` values (`text-<time>-<seq>`); no duplicates observed. |
+| Drag block while Inspector mid-edit | **PASS** — Value `PRESERVE-DRAG` survived synthetic dragstart/dragend on the block handle; block remained selected. |
+| Switch selection immediately after typing | **PASS** — `PRESERVE-1` still present after immediate click onto another block (input event commits into React state). |
+| Double-trigger “Apply to site” | **COULD NOT VERIFY** — No Apply button in UI (same gap as Round 1). |
+
+### Persistence edge cases
+
+| Item | Result |
+| --- | --- |
+| Large draft (15+ blocks, EN/RU captions) save/restore | **PASS** — 16 blocks with EN/RU filled; “Saved locally”; reload restored **16** blocks and sample EN text (`Block EN 0 …`). |
+| IndexedDB quota exceeded / unavailable | **COULD NOT VERIFY** — Could not force quota failure in this environment (estimate ~quota large, usage ~16KB). Code path on load failure sets `saveStatus` to `unavailable` (`StudioDraftContext.tsx`); not re-proven under real private-storage restrictions. |
+| Close tab mid-edit, reopen `/studio` | **PASS** — Full reload after save restored the 16-block draft (IndexedDB). **Not** proven for closing during the ~450ms unsaved debounce window before flush. |
+
+### Media import edge cases
+
+| Item | Result |
+| --- | --- |
+| Very large source (>20MB / huge resolution) | **COULD NOT VERIFY** — No large sample image available to the automated session; folder picker not driven. |
+| Unusual aspect ratio (panorama / tall portrait) | **COULD NOT VERIFY** — No import session with extreme-aspect files. |
+| Non-image in folder (.mov, .txt) | **PASS** (code) — `listImageFiles` only accepts `LIST_EXT` (images + some RAW/tiff/gif/bmp); `.mov` / `.txt` are filtered out and never enter the Library list. |
+| Same source used in two blocks | **PASS** (code + model) — Same Library asset can be placed in multiple slots; `prepareUsedAsset` reuses existing `publishedName` (one derivative, shared path). `uniqueFileName` would suffix `-1` if a second write of the same preferred name were attempted. |
+
+### Localization edge cases
+
+| Item | Result |
+| --- | --- |
+| Very long RU caption/title | **PASS** — ~720-char Russian on canvas; `white-space: normal`, no horizontal overflow (`scrollWidth === clientWidth`); Studio stayed stable. Inspector textareas scroll vertically as needed. |
+| Switch Canvas locale mid-edit | **PASS** — After committing EN via input, EN→RU→EN kept `LOCALE-KEEP` in the EN field. |
+
+### Site-integration edge cases
+
+| Item | Result |
+| --- | --- |
+| Title/slug collides with `chiatura-caves` or an applied Story | **FAIL** — **Severity: blocks publishing / overwrite risk.** `slugifyTitle('Chiatura caves')` → `chiatura-caves`. Generate would emit that slug. When Apply is finished, `stories.ts` merge drops authored previews whose `id` is in `appliedIds`, so an applied story with that id would **replace** the hand-authored Chiatura card. No collision guard/error UI today. Apply write itself still missing (cannot observe live overwrite). |
+| Special / non-Latin title → URL-safe slug | **FAIL** — **Severity: blocks publishing / data integrity.** Cyrillic title `Пещеры Риони` slugifies to **`untitled-story`** (non-Latin letters stripped). Multiple non-Latin titles would collide on the same slug. Latin/`Hello / World!!! 2025` → `hello-world-2025` (URL-safe). |
+| Apply then refresh before build-validation finishes | **COULD NOT VERIFY** — Apply + build-validation flow not implemented/wired. |
+
+### Round 2 FAIL details
+
+1. **Slug collision with existing Chiatura story** (`src/studio/generate/slugify.ts`, `src/data/stories.ts` applied-id merge, missing Apply UI) — generating/applying a title that slugifies to `chiatura-caves` has no warning and would be designed to win over the hand-authored entry once Apply writes `applied-stories.json`.
+2. **Non-Latin titles collapse to `untitled-story`** (`src/studio/generate/slugify.ts`) — lossy slug; collision across distinct RU/other-script titles.
+
+### Round 2 notes (not scored as product bugs)
+
+- Undo/redo in the design reference is simply **not in the current Studio top bar** — absence is an incomplete feature, not a broken control.
+- Same-asset multi-use sharing one derivative is consistent with the current asset state machine (status `used` + single `publishedName`).
