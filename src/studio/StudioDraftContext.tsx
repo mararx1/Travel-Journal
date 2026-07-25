@@ -15,6 +15,7 @@ type StudioDraftContextValue = {
   selectedBlock: StudioBlock | null
   selectBlock: (id: string | null) => void
   updateBlock: (id: string, updater: (block: StudioBlock) => StudioBlock) => void
+  reorderBlocks: (fromIndex: number, insertBeforeIndex: number) => void
 }
 
 const StudioDraftContext = createContext<StudioDraftContextValue | null>(null)
@@ -34,14 +35,38 @@ export function StudioDraftProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const reorderBlocks = useCallback((fromIndex: number, insertBeforeIndex: number) => {
+    setDraft((current) => {
+      if (
+        fromIndex < 0
+        || fromIndex >= current.blocks.length
+        || insertBeforeIndex < 0
+        || insertBeforeIndex > current.blocks.length
+      ) {
+        return current
+      }
+
+      // Same position — no change (including insert immediately after self).
+      if (insertBeforeIndex === fromIndex || insertBeforeIndex === fromIndex + 1) {
+        return current
+      }
+
+      const blocks = [...current.blocks]
+      const [moved] = blocks.splice(fromIndex, 1)
+      const dest = insertBeforeIndex > fromIndex ? insertBeforeIndex - 1 : insertBeforeIndex
+      blocks.splice(dest, 0, moved)
+      return { ...current, blocks }
+    })
+  }, [])
+
   const selectedBlock = useMemo(
     () => draft.blocks.find((block) => block.id === selectedBlockId) ?? null,
     [draft.blocks, selectedBlockId],
   )
 
   const value = useMemo(
-    () => ({ draft, selectedBlockId, selectedBlock, selectBlock, updateBlock }),
-    [draft, selectedBlockId, selectedBlock, selectBlock, updateBlock],
+    () => ({ draft, selectedBlockId, selectedBlock, selectBlock, updateBlock, reorderBlocks }),
+    [draft, selectedBlockId, selectedBlock, selectBlock, updateBlock, reorderBlocks],
   )
 
   return <StudioDraftContext.Provider value={value}>{children}</StudioDraftContext.Provider>

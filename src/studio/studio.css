@@ -295,9 +295,45 @@
   opacity: 0.7;
 }
 
+.studio-block-slot {
+  position: relative;
+}
+
+.studio-drop-slot {
+  position: relative;
+  height: 12px;
+  margin: 0 0 -6px;
+  z-index: 2;
+}
+
+.studio-drop-slot--end {
+  height: 20px;
+  margin: 0;
+}
+
+.studio-drop-indicator {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.studio-drop-indicator.is-active {
+  background: #111;
+  box-shadow: 0 0 0 1px #111;
+}
+
 .studio-block {
   position: relative;
-  margin: 0 0 18px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 4px;
+  margin: 0 0 12px;
   padding: 4px;
   border: 1px solid transparent;
   border-radius: 2px;
@@ -307,6 +343,33 @@
 
 .studio-block.is-selected {
   border-color: #111;
+}
+
+.studio-block.is-dragging {
+  opacity: 0.45;
+}
+
+.studio-drag-handle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 28px;
+  padding: 10px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--studio-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+}
+
+.studio-drag-handle:active {
+  cursor: grabbing;
+}
+
+.studio-block-body {
+  min-width: 0;
 }
 
 .studio-block .story-text,
@@ -319,6 +382,11 @@
 
 .studio-block .story-photo-trigger {
   pointer-events: none;
+}
+
+.story-narrative.is-reordering .studio-drop-slot {
+  height: 18px;
+  margin: 0 0 -4px;
 }
 
 .studio-toggle-btn {
