@@ -109,8 +109,10 @@ JSON-compatible envelope stored in IndexedDB:
 ```ts
 {
   schemaVersion: 1,
-  id: string,            // working key; Phase 3 uses "default"
-  updatedAt: string,     // ISO timestamp
+  id: string,            // stable per-draft id (multi-draft)
+  updatedAt: string,     // ISO timestamp (last edited)
+  kind: 'story' | 'journal',
+  status: 'draft' | 'ready',  // matches top-bar Apply pill
   draft: {
     title: string,
     kicker: string,      // date · location line shown in the shell
@@ -121,14 +123,16 @@ JSON-compatible envelope stored in IndexedDB:
 }
 ```
 
-Each block keeps its existing in-memory shape: `type`, layout presets (`size` / `layout`), image refs + captions, and EN/RU `LocalizedText` fields. Selection and preview UI state are **not** persisted.
+Each block keeps its existing in-memory shape: `type`, layout presets (`size` / `layout`), image refs + captions, and EN/RU `LocalizedText` fields. Selection and preview UI state are **not** persisted. Missing `kind` / `status` on older records default to `story` / `draft` on parse.
 
 ### Storage
 
-- IndexedDB database `mararx-studio`, object store `drafts`, keyPath `id`.
+- IndexedDB database `mararx-studio`, object store `drafts`, keyPath `id` (multiple documents).
 - Helpers: `src/studio/persist/draftStore.ts` (hand-rolled; no persistence framework).
-- Debounced autosave (~450ms) on draft changes; top-bar status: loading / unsaved / saving / saved / unavailable.
-- On `/studio` load: restore document `default` when valid; otherwise seed from `mockDraft`. If IndexedDB fails, Studio stays in-memory for the session and the top bar notes that local saving is unavailable.
+- Debounced autosave (~450ms) on the **active** draft; flush immediately when switching/creating/deleting via Pages.
+- Active draft id remembered in `localStorage` (`mararx-studio-active-draft-id`).
+- On `/studio` load: restore active/most-recent draft; if the store is empty, seed from `mockDraft`. Legacy single `default` docs remain readable. If IndexedDB fails, Studio stays in-memory for the session and the top bar notes that local saving is unavailable.
+- **Pages** tab lists drafts (title, kind, status, last edited), opens/switches, New Story, stub New Journal entry (same canvas), and confirmed Delete.
 
 ---
 

@@ -104,8 +104,23 @@ function disambiguate(base: string, reserved: Set<string>): StorySlugResult {
   }
 }
 
+/** Reuse the slug of an already-applied Studio story with the same EN title (idempotent re-Apply). */
+function appliedSlugForTitle(title: string): string | null {
+  const normalized = title.trim()
+  if (!normalized) return null
+  for (const story of appliedStoryPreviews) {
+    const en = story.title?.en?.trim()
+    if (en && en === normalized) return story.id
+  }
+  return null
+}
+
 /** Resolve a URL-safe story slug, avoiding collisions with existing site stories. */
 export function resolveStorySlug(title: string): StorySlugResult {
+  const existing = appliedSlugForTitle(title)
+  if (existing) {
+    return { slug: existing, collisionAdjusted: false }
+  }
   const base = baseSlugFromTitle(title)
   return disambiguate(base, reservedStorySlugs())
 }

@@ -28,6 +28,154 @@
           }
         }
       ]
+    },
+    "round3-apply-verify": {
+      "preview": {
+        "id": "round3-apply-verify",
+        "coverImage": "/images/stories/round3-apply-cover.jpg",
+        "coverAlt": {
+          "en": "Round 3 cover"
+        },
+        "title": {
+          "en": "Round 3 Apply Verify Updated"
+        },
+        "location": {
+          "en": "Georgia"
+        },
+        "date": "2026-07-25",
+        "description": {
+          "en": "double-trigger B"
+        },
+        "photoCount": 1,
+        "route": "/stories/round3-apply-verify"
+      },
+      "blocks": [
+        {
+          "type": "text",
+          "content": {
+            "en": "double B"
+          }
+        },
+        {
+          "type": "image",
+          "size": "full",
+          "image": {
+            "src": "/images/stories/round3-apply-cover.jpg",
+            "alt": {
+              "en": "Cover",
+              "ru": "Обложка"
+            }
+          }
+        }
+      ]
+    },
+    "chiatura-caves-2": {
+      "preview": {
+        "id": "chiatura-caves-2",
+        "coverImage": "/images/stories/round3-apply-cover.jpg",
+        "coverAlt": {
+          "en": "c"
+        },
+        "title": {
+          "en": "Chiatura caves"
+        },
+        "location": {
+          "en": "Georgia"
+        },
+        "date": "2026-07-01",
+        "description": {
+          "en": "x"
+        },
+        "intro": {
+          "en": "x"
+        },
+        "photoCount": 1,
+        "route": "/stories/chiatura-caves-2"
+      },
+      "blocks": [
+        {
+          "type": "image",
+          "size": "full",
+          "image": {
+            "src": "/images/stories/round3-apply-cover.jpg",
+            "alt": {
+              "en": "c"
+            }
+          }
+        }
+      ]
+    },
+    "e2e-self-test-story": {
+      "preview": {
+        "id": "e2e-self-test-story",
+        "coverImage": "/images/stories/dirt-road.JPG",
+        "coverAlt": {
+          "en": "Dirt road"
+        },
+        "title": {
+          "en": "E2E Self Test Story"
+        },
+        "location": {
+          "en": "Georgia"
+        },
+        "date": "2026-07-01",
+        "description": {
+          "en": "Self-test apply pass 1"
+        },
+        "intro": {
+          "en": "Self-test apply pass 1"
+        },
+        "photoCount": 1,
+        "route": "/stories/e2e-self-test-story"
+      },
+      "blocks": [
+        {
+          "type": "image",
+          "size": "full",
+          "image": {
+            "src": "/images/stories/dirt-road.JPG",
+            "alt": {
+              "en": "Dirt road"
+            }
+          }
+        }
+      ]
+    },
+    "completion-self-test": {
+      "preview": {
+        "id": "completion-self-test",
+        "coverImage": "/images/stories/dirt-road.JPG",
+        "coverAlt": {
+          "en": "Dirt road"
+        },
+        "title": {
+          "en": "Completion Self Test"
+        },
+        "location": {
+          "en": "Georgia"
+        },
+        "date": "2026-07-01",
+        "description": {
+          "en": "Completion self-test intro v2"
+        },
+        "intro": {
+          "en": "Completion self-test intro v2"
+        },
+        "photoCount": 1,
+        "route": "/stories/completion-self-test"
+      },
+      "blocks": [
+        {
+          "type": "image",
+          "size": "full",
+          "image": {
+            "src": "/images/stories/dirt-road.JPG",
+            "alt": {
+              "en": "Dirt road"
+            }
+          }
+        }
+      ]
     }
   }
 }

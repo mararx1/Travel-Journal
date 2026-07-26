@@ -30,6 +30,7 @@ export function TopBar({ onExit }: TopBarProps) {
     siteStatus,
     setPreviewLocale,
     setPreviewViewport,
+    updateDraftMeta,
   } = useStudioDraft()
 
   return (
@@ -50,7 +51,12 @@ export function TopBar({ onExit }: TopBarProps) {
       </div>
 
       <div className="studio-topbar-center">
-        <h1 className="studio-title">{draft.title}</h1>
+        <input
+          className="studio-title"
+          value={draft.title}
+          aria-label="Draft title"
+          onChange={(event) => updateDraftMeta({ title: event.target.value })}
+        />
         <span className={`studio-pill${siteStatus === 'ready' ? ' is-ready' : ''}`}>
           {siteStatus === 'ready' ? 'Ready' : 'Draft'}
         </span>

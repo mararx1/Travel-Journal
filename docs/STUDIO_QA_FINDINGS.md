@@ -160,3 +160,31 @@ _Method: browser/CDP exercise on `/studio` plus code inspection where OS pickers
 
 - Undo/redo in the design reference is simply **not in the current Studio top bar** — absence is an incomplete feature, not a broken control.
 - Same-asset multi-use sharing one derivative is consistent with the current asset state machine (status `used` + single `publishedName`).
+
+---
+
+## Round 3 — Apply-to-site verification
+
+_Date: 25 July 2026_  
+_Method: Re-check of Apply-related Round 1/2 items that were FAIL or COULD NOT VERIFY. Exercised `POST /__studio/apply-to-site` against the running Vite dev server, `npm run build`, browser render of applied + hand-authored Story routes, and slugify/validation helpers. Studio top bar confirmed to expose **Apply to site** (alongside Generate / Validation / disabled Publish)._
+
+### Checklist
+
+| Item | Result |
+| --- | --- |
+| “Apply to site” writes live data + images; does not disturb chiatura-caves | **PASS** — Apply for slug `round3-apply-verify` wrote `src/data/applied-stories.json` and `public/images/stories/round3-apply-cover.jpg` (`buildOk: true`). Direct apply of reserved slug `chiatura-caves` rejected (`Slug “chiatura-caves” is reserved…`). `src/data/story-details.ts` / `chiaturaCavesContent` unchanged; `cliff-cave.JPG` bytes unchanged. Browser `/stories/chiatura-caves` still renders “Caves of the Rioni” with hand-authored blocks. |
+| Re-running “Apply to site” on the same draft does not create duplicates | **PASS** — Second apply for the same slug updated title to “Round 3 Apply Verify Updated”; `applied-stories.json` still had exactly one key `round3-apply-verify` (no duplicate entries). |
+| `npm run build` passes after the write | **PASS** — Apply response reported `buildOk: true` (build log contained Vite “built in …”). Follow-up standalone `npm run build` exited 0. |
+| Resulting Story renders at `/stories/:slug` and `/ru/stories/:slug` | **PASS** — `/stories/round3-apply-verify` showed article “Round 3 Apply Verify Updated” with cover + body. `/ru/stories/round3-apply-verify` rendered the same story under RU chrome (cover control used RU alt “Обложка”). Both routes HTTP 200. |
+| Double-trigger “Apply to site” | **PASS** — Two concurrent Apply POSTs for the same slug both returned `ok: true`; final JSON still had a single `round3-apply-verify` key (last write won on description). UI: **Apply to site** button present; control is `disabled={busy}` while an Apply is in flight (prevents overlapping clicks from one session). |
+| Slug collision handling (prior Round 2 FAILs) | **PASS** — `Пещеры Риони` → `peshchery-rioni` (non-generic). `Chiatura caves` → `chiatura-caves-2` with validation warning “Slug adjusted to … to avoid collision…”; warning is in `getBlockingWarnings`. Apply of adjusted slug `chiatura-caves-2` succeeded; `chiatura-caves` key absent from `applied-stories.json`; reserved apply of bare `chiatura-caves` still rejected. |
+
+### Round 3 FAIL details
+
+None.
+
+### Round 3 notes
+
+- Verification left applied test entries in `src/data/applied-stories.json` (`qa-apply-story`, `round3-apply-verify`, `chiatura-caves-2`) plus cover file `public/images/stories/round3-apply-cover.jpg` from the exercise.
+- Concurrent Apply is last-write-wins at the JSON key; it does not create duplicate slug keys. No mutex beyond the client `busy` flag.
+- Title remains EN-only on the draft model, so RU Story pages correctly fall back to EN for the title while localized block/alt strings show when provided.

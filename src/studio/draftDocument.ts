@@ -11,8 +11,11 @@ import type {
 /** Current persisted draft document version. Bump when the shape changes incompatibly. */
 export const DRAFT_SCHEMA_VERSION = 1 as const
 
-/** Single-owner working draft key (no multi-draft UI in Phase 3). */
+/** Legacy single-draft key — migrated into the multi-draft list on first load. */
 export const DEFAULT_DRAFT_ID = 'default'
+
+export type DraftKind = 'story' | 'journal'
+export type DraftSiteStatus = 'draft' | 'ready'
 
 /**
  * Serializable Studio draft envelope (JSON / IndexedDB).
@@ -25,15 +28,59 @@ export type StudioDraftDocument = {
   schemaVersion: typeof DRAFT_SCHEMA_VERSION
   id: string
   updatedAt: string
+  kind: DraftKind
+  status: DraftSiteStatus
   draft: StudioDraft
 }
 
-export function toDraftDocument(draft: StudioDraft, id = DEFAULT_DRAFT_ID): StudioDraftDocument {
+export type DraftListItem = {
+  id: string
+  title: string
+  kind: DraftKind
+  status: DraftSiteStatus
+  updatedAt: string
+}
+
+export function toDraftDocument(
+  draft: StudioDraft,
+  id: string,
+  meta: { kind: DraftKind; status: DraftSiteStatus },
+): StudioDraftDocument {
   return {
     schemaVersion: DRAFT_SCHEMA_VERSION,
     id,
     updatedAt: new Date().toISOString(),
+    kind: meta.kind,
+    status: meta.status,
     draft,
+  }
+}
+
+export function toDraftListItem(document: StudioDraftDocument): DraftListItem {
+  return {
+    id: document.id,
+    title: document.draft.title.trim() || (document.kind === 'journal' ? 'Untitled Journal entry' : 'Untitled Story'),
+    kind: document.kind,
+    status: document.status,
+    updatedAt: document.updatedAt,
+  }
+}
+
+export function createEmptyStoryDraft(): StudioDraft {
+  return {
+    title: 'Untitled Story',
+    kicker: '',
+    intro: '',
+    blocks: [],
+  }
+}
+
+export function createEmptyJournalDraft(): StudioDraft {
+  return {
+    title: 'Untitled Journal entry',
+    kicker: '',
+    intro: '',
+    blocks: [],
   }
 }
 
@@ -120,6 +167,14 @@ function isStudioDraft(value: unknown): value is StudioDraft {
   return true
 }
 
+function parseKind(value: unknown): DraftKind {
+  return value === 'journal' ? 'journal' : 'story'
+}
+
+function parseStatus(value: unknown): DraftSiteStatus {
+  return value === 'ready' ? 'ready' : 'draft'
+}
+
 /** Returns a validated document, or null if the value is not a usable v1 draft. */
 export function parseDraftDocument(value: unknown): StudioDraftDocument | null {
   if (!isRecord(value)) return null
@@ -132,6 +187,12 @@ export function parseDraftDocument(value: unknown): StudioDraftDocument | null {
     schemaVersion: DRAFT_SCHEMA_VERSION,
     id: value.id,
     updatedAt: value.updatedAt,
+    kind: parseKind(value.kind),
+    status: parseStatus(value.status),
     draft: value.draft,
   }
+}
+
+export function newDraftId(): string {
+  return `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 }

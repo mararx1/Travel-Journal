@@ -1,6 +1,7 @@
-import type { DragEvent } from 'react'
+import { useState, type DragEvent } from 'react'
 import { ASSET_DRAG_MIME, useMediaLibrary } from '../MediaLibraryContext'
 import type { MediaAsset } from '../media/types'
+import { PagesPanel } from './PagesPanel'
 
 const mockFolders = [
   { id: 'racha', name: 'Racha — July 2026', count: 36 },
@@ -17,7 +18,10 @@ function statusLabel(asset: MediaAsset): string | null {
   return null
 }
 
+type LeftTab = 'library' | 'pages'
+
 export function MediaLibrary() {
+  const [leftTab, setLeftTab] = useState<LeftTab>('library')
   const {
     fsSupported,
     sourceFolderName,
@@ -52,12 +56,30 @@ export function MediaLibrary() {
 
   return (
     <aside className="studio-panel studio-panel-left">
-      <div className="studio-tabs">
-        <span className="studio-tab is-active">Library</span>
-        <span className="studio-tab">Pages</span>
+      <div className="studio-tabs" role="tablist" aria-label="Studio left panel">
+        <button
+          type="button"
+          role="tab"
+          className={`studio-tab${leftTab === 'library' ? ' is-active' : ''}`}
+          aria-selected={leftTab === 'library'}
+          onClick={() => setLeftTab('library')}
+        >
+          Library
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={`studio-tab${leftTab === 'pages' ? ' is-active' : ''}`}
+          aria-selected={leftTab === 'pages'}
+          onClick={() => setLeftTab('pages')}
+        >
+          Pages
+        </button>
       </div>
       <div className="studio-panel-scroll">
-        {!fsSupported && (
+        {leftTab === 'pages' && <PagesPanel />}
+
+        {leftTab === 'library' && !fsSupported && (
           <>
             <p className="studio-muted">
               Local folder import isn’t available in this browser. Use Chrome or Edge on desktop.
@@ -85,7 +107,7 @@ export function MediaLibrary() {
           </>
         )}
 
-        {fsSupported && (
+        {leftTab === 'library' && fsSupported && (
           <>
             <div className="studio-library-actions">
               <button
